@@ -119,6 +119,14 @@
     .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--muted); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+
+    /* BROWSE */
+    .browse-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .browse-card-info { flex: 1; min-width: 0; }
+    .browse-card-title { font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .browse-card-meta { font-size: 0.72rem; color: var(--muted); margin-top: 3px; }
+    .browse-card-btn { flex-shrink: 0; }
+
     /* TRIM MODAL */
     .trim-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 250; display: none; flex-direction: column; }
     .trim-modal.show { display: flex; }
@@ -151,6 +159,18 @@
     <div class="status" id="dl-status"></div>
     <div class="section-label">Recent downloads</div>
     <div id="recent-list"></div>
+
+    <div class="section-label" style="margin-top:32px">Browse a profile</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <input type="url" id="browse-url" placeholder="https://www.instagram.com/username/" autocomplete="off" autocorrect="off" spellcheck="false">
+      <button class="btn btn-secondary" id="browse-btn" onclick="doBrowse(false)">Browse</button>
+    </div>
+    <div class="status" id="browse-status"></div>
+    <div id="browse-list" style="margin-top:12px"></div>
+    <div id="browse-more-wrap" style="display:none;margin-top:8px">
+      <button class="btn btn-secondary" onclick="doBrowse(true)">Load 10 more</button>
+    </div>
+
   </div>
 
   <!-- PAGE: LIBRARY -->
@@ -665,6 +685,122 @@
     btn.disabled = false;
   }
 
+
+
+  // ─── BROWSE PROFILE ────────────────────────────────
+  let browseOffset = 0;
+  let browseResults = [];
+  // Track per-video download state: { url: 'idle'|'loading'|'done'|'error' }
+  let browseDownloadState = {};
+
+  async function doBrowse(loadMore) {
+    const url = document.getElementById('browse-url').value.trim();
+    if (!url) return;
+    if (!loadMore) {
+      browseOffset = 0;
+      browseResults = [];
+      browseDownloadState = {};
+      document.getElementById('browse-list').innerHTML = '';
+      document.getElementById('browse-more-wrap').style.display = 'none';
+    }
+    const btn = document.getElementById('browse-btn');
+    const moreBtn = document.querySelector('#browse-more-wrap button');
+    btn.disabled = true;
+    if (moreBtn) moreBtn.disabled = true;
+    setStatus('browse-status', 'loading', '<span class="spinner"></span>Fetching videos… this may take a moment');
+
+    try {
+      const res = await fetch(`${API}/browse`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, offset: browseOffset, limit: 10 })
+      });
+      const data = await res.json();
+      if (data.error) {
+        setStatus('browse-status', 'err', '✗ ' + data.error);
+        btn.disabled = false;
+        if (moreBtn) moreBtn.disabled = false;
+        return;
+      }
+
+      if (!data.videos.length && !loadMore) {
+        setStatus('browse-status', 'err', '✗ No videos found — is this a public profile?');
+        btn.disabled = false;
+        return;
+      }
+
+      browseResults = browseResults.concat(data.videos);
+      browseOffset += data.videos.length;
+
+      const hideStatus = data.videos.length > 0;
+      if (hideStatus) {
+        document.getElementById('browse-status').className = 'status';
+      }
+
+      renderBrowseList();
+
+      // Show load more if we got a full page
+      document.getElementById('browse-more-wrap').style.display =
+        data.videos.length === 10 ? 'block' : 'none';
+
+    } catch (e) {
+      setStatus('browse-status', 'err', '✗ Could not reach server');
+    }
+    btn.disabled = false;
+    if (moreBtn) moreBtn.disabled = false;
+  }
+
+  function renderBrowseList() {
+    const container = document.getElementById('browse-list');
+    container.innerHTML = browseResults.map((v, i) => {
+      const state = browseDownloadState[v.url] || 'idle';
+      const duration = v.duration ? `${Math.floor(v.duration / 60)}:${String(Math.floor(v.duration % 60)).padStart(2,'0')}` : '';
+      let btnHtml = '';
+      if (state === 'idle') {
+        btnHtml = `<button class="btn btn-primary btn-sm browse-card-btn" onclick="downloadBrowsed(${i})">⬇️</button>`;
+      } else if (state === 'loading') {
+        btnHtml = `<button class="btn btn-secondary btn-sm browse-card-btn" disabled><span class="spinner"></span></button>`;
+      } else if (state === 'done') {
+        btnHtml = `<button class="btn btn-secondary btn-sm browse-card-btn" disabled style="color:var(--success)">✓</button>`;
+      } else if (state === 'error') {
+        btnHtml = `<button class="btn btn-danger btn-sm browse-card-btn" onclick="downloadBrowsed(${i})">↺</button>`;
+      }
+      return `
+        <div class="browse-card" id="browse-card-${i}">
+          <div class="browse-card-info">
+            <div class="browse-card-title">${v.title}</div>
+            <div class="browse-card-meta">${duration}</div>
+          </div>
+          ${btnHtml}
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function downloadBrowsed(index) {
+    const v = browseResults[index];
+    browseDownloadState[v.url] = 'loading';
+    renderBrowseList();
+    try {
+      const res = await fetch(`${API}/download`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: v.url })
+      });
+      const data = await res.json();
+      if (data.status === 'ok') {
+        browseDownloadState[v.url] = 'done';
+        showToast(`✓ Downloaded: ${v.title.slice(0,30)}`);
+      } else {
+        browseDownloadState[v.url] = 'error';
+        showToast('✗ Download failed', 3000);
+      }
+    } catch (e) {
+      browseDownloadState[v.url] = 'error';
+      showToast('✗ Could not reach server', 3000);
+    }
+    renderBrowseList();
+  }
 
   // ─── TRIM MODAL ────────────────────────────────────
   let trimFilename = null;
