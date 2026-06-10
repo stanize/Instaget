@@ -1,4 +1,4 @@
-VERSION = "0.07"
+VERSION = "0.08"
 
 from flask import Flask, request, jsonify, Response, send_file
 from flask_cors import CORS
@@ -7,6 +7,8 @@ import os
 import glob
 import re
 import shutil
+import json
+from datetime import datetime
 
 app = Flask(__name__)
 CORS(app)
@@ -14,6 +16,7 @@ CORS(app)
 DOWNLOAD_DIR = os.path.expanduser("~/storage/downloads/InstaGet")
 COMPILATIONS_DIR = os.path.join(DOWNLOAD_DIR, "compilations")
 COOKIES_FILE = os.path.expanduser("~/instagram_cookies.txt")
+QUEUE_FILE = os.path.expanduser("~/instaget_queue.json")
 
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 os.makedirs(COMPILATIONS_DIR, exist_ok=True)
@@ -21,10 +24,75 @@ os.makedirs(COMPILATIONS_DIR, exist_ok=True)
 VIDEO_EXTENSIONS = (".mp4", ".mkv", ".webm", ".mov", ".avi")
 
 
-@app.route("/version")
-def version():
-    return jsonify({"version": VERSION})
+# ─── QUEUE ─────────────────────────────────────────────────
 
+def load_queue():
+    if os.path.exists(QUEUE_FILE):
+        try:
+            with open(QUEUE_FILE) as f:
+                return json.load(f)
+        except:
+            return []
+    return []
+
+
+def save_queue(queue):
+    with open(QUEUE_FILE, "w") as f:
+        json.dump(queue, f, indent=2)
+
+
+@app.route("/queue", methods=["GET"])
+def get_queue():
+    return jsonify(load_queue())
+
+
+@app.route("/queue/add", methods=["POST"])
+def add_to_queue():
+    data = request.get_json()
+    url = data.get("url", "").strip()
+    title = data.get("title", url)
+    if not url:
+        return jsonify({"error": "No URL"}), 400
+    queue = load_queue()
+    # Avoid duplicates
+    if any(item["url"] == url for item in queue):
+        return jsonify({"status": "exists"})
+    queue.append({
+        "id": str(len(queue) + 1) + "_" + str(int(datetime.now().timestamp())),
+        "url": url,
+        "title": title,
+        "added": datetime.now().isoformat(),
+        "last_status": "queued"
+    })
+    save_queue(queue)
+    return jsonify({"status": "ok"})
+
+
+@app.route("/queue/remove", methods=["POST"])
+def remove_from_queue():
+    data = request.get_json()
+    item_id = data.get("id", "")
+    queue = load_queue()
+    queue = [item for item in queue if item["id"] != item_id]
+    save_queue(queue)
+    return jsonify({"status": "ok"})
+
+
+@app.route("/queue/update-status", methods=["POST"])
+def update_queue_status():
+    data = request.get_json()
+    item_id = data.get("id", "")
+    status = data.get("status", "")
+    queue = load_queue()
+    for item in queue:
+        if item["id"] == item_id:
+            item["last_status"] = status
+            item["last_downloaded"] = datetime.now().isoformat()
+    save_queue(queue)
+    return jsonify({"status": "ok"})
+
+
+# ─── UTILS ─────────────────────────────────────────────────
 
 def get_videos():
     videos = []
@@ -42,10 +110,20 @@ def safe_filename(name):
     return re.sub(r"[^\w\-.]", "_", name)
 
 
+# ─── VERSION ───────────────────────────────────────────────
+
+@app.route("/version")
+def version():
+    return jsonify({"version": VERSION})
+
+
+# ─── DOWNLOAD ──────────────────────────────────────────────
+
 @app.route("/download", methods=["POST"])
 def download():
     data = request.get_json()
     url = data.get("url", "").strip()
+    queue_id = data.get("queue_id", None)
     if not url:
         return jsonify({"error": "No URL provided"}), 400
     try:
@@ -59,12 +137,27 @@ def download():
         cmd.append(url)
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
         if result.returncode == 0:
+            if queue_id:
+                queue = load_queue()
+                for item in queue:
+                    if item["id"] == queue_id:
+                        item["last_status"] = "downloaded"
+                        item["last_downloaded"] = datetime.now().isoformat()
+                save_queue(queue)
             return jsonify({"status": "ok", "message": "Video downloaded!"})
         else:
+            if queue_id:
+                queue = load_queue()
+                for item in queue:
+                    if item["id"] == queue_id:
+                        item["last_status"] = "failed"
+                save_queue(queue)
             return jsonify({"error": result.stderr[-500:]}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+# ─── VIDEOS ────────────────────────────────────────────────
 
 @app.route("/videos", methods=["GET"])
 def list_videos():
@@ -141,8 +234,7 @@ def video_duration(filename):
         capture_output=True, text=True
     )
     try:
-        duration = float(result.stdout.strip())
-        return jsonify({"duration": duration})
+        return jsonify({"duration": float(result.stdout.strip())})
     except:
         return jsonify({"duration": 0})
 
@@ -160,6 +252,8 @@ def rename_existing():
                 renamed.append(f"{name} -> {new_name}")
     return jsonify({"status": "ok", "renamed": renamed})
 
+
+# ─── MERGE ─────────────────────────────────────────────────
 
 @app.route("/merge", methods=["POST"])
 def merge():
@@ -191,7 +285,7 @@ def merge():
                     "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2", temp_path]
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
             if result.returncode != 0:
-                return jsonify({"error": f"v{VERSION} clip {i} failed: {result.stderr[-500:]}"}), 500
+                return jsonify({"error": f"clip {i} failed: {result.stderr[-500:]}"}), 500
         with open(concat_file, "w") as f:
             for tp in temp_files:
                 f.write(f"file '{tp}'\n")
@@ -200,9 +294,9 @@ def merge():
         if result.returncode == 0:
             return jsonify({"status": "ok", "output": os.path.basename(output_path)})
         else:
-            return jsonify({"error": f"v{VERSION} concat failed: {result.stderr[-800:]}"}), 500
+            return jsonify({"error": f"concat failed: {result.stderr[-800:]}"}), 500
     except Exception as e:
-        return jsonify({"error": f"v{VERSION} exception: {str(e)}"}), 500
+        return jsonify({"error": str(e)}), 500
     finally:
         for tp in temp_files:
             if os.path.exists(tp):
@@ -210,6 +304,8 @@ def merge():
         if os.path.exists(concat_file):
             os.remove(concat_file)
 
+
+# ─── TRIM ──────────────────────────────────────────────────
 
 @app.route("/trim", methods=["POST"])
 def trim_video():
@@ -254,6 +350,8 @@ def trim_video():
         return jsonify({"error": str(e)}), 500
 
 
+# ─── COMPILATIONS ──────────────────────────────────────────
+
 @app.route("/compilations/<path:filename>")
 def stream_compilation(filename):
     filepath = os.path.join(COMPILATIONS_DIR, filename)
@@ -275,6 +373,8 @@ def list_compilations():
     videos.sort(key=lambda v: v["mtime"], reverse=True)
     return jsonify(videos)
 
+
+# ─── BROWSE ────────────────────────────────────────────────
 
 @app.route("/browse", methods=["POST"])
 def browse_profile():
@@ -318,5 +418,7 @@ def browse_profile():
 
 
 if __name__ == "__main__":
-    print(f"InstaGet server v{VERSION} — saving to: {DOWNLOAD_DIR}")
+    print(f"InstaGet server v{VERSION}")
+    print(f"Downloads: {DOWNLOAD_DIR}")
+    print(f"Queue: {QUEUE_FILE}")
     app.run(host="0.0.0.0", port=5000, debug=False)
