@@ -8,176 +8,193 @@
   <meta name="theme-color" content="#0d0d0d">
   <style>
     :root {
-      --bg: #0d0d0d;
-      --surface: #181818;
-      --surface2: #222;
-      --border: #2a2a2a;
-      --accent: #e1306c;
-      --accent2: #ff6b9d;
-      --text: #f0f0f0;
-      --muted: #666;
-      --success: #2ecc71;
-      --error: #e74c3c;
-      --radius: 12px;
-      --tab-h: 56px;
-      --header-h: 52px;
+      --bg: #0d0d0d; --surface: #181818; --surface2: #222; --border: #2a2a2a;
+      --accent: #e1306c; --accent2: #ff6b9d; --text: #f0f0f0; --muted: #666;
+      --success: #2ecc71; --error: #e74c3c; --warn: #f39c12;
+      --radius: 12px; --tab-h: 56px; --header-h: 56px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
 
+    /* HEADER */
     .header { position: fixed; top: 0; left: 0; right: 0; height: var(--header-h); background: var(--bg); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 16px; z-index: 100; gap: 10px; }
-    .header-logo { font-size: 1.2rem; font-weight: 800; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px; }
-    .header-badge { font-size: 0.65rem; background: var(--surface2); color: var(--muted); padding: 2px 7px; border-radius: 20px; border: 1px solid var(--border); }
+    .header-logo { font-size: 1.2rem; font-weight: 800; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .server-input-wrap { flex: 1; display: flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; height: 34px; }
+    .server-input-wrap input { flex: 1; background: none; border: none; color: var(--text); font-size: 0.75rem; outline: none; min-width: 0; }
+    .server-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: background 0.3s; }
+    .server-dot.online { background: var(--success); }
+    .server-dot.offline { background: var(--error); }
 
+    /* TABS */
     .tabs { position: fixed; bottom: 0; left: 0; right: 0; height: var(--tab-h); background: var(--bg); border-top: 1px solid var(--border); display: flex; z-index: 100; }
-    .tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; color: var(--muted); font-size: 0.6rem; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; transition: color 0.15s; border: none; background: none; padding: 0; }
+    .tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; color: var(--muted); font-size: 0.55rem; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; border: none; background: none; padding: 0; transition: color 0.15s; }
     .tab.active { color: var(--accent); }
-    .tab-icon { font-size: 1.2rem; }
+    .tab-icon { font-size: 1.15rem; }
 
+    /* PAGES */
     .page { display: none; padding: calc(var(--header-h) + 16px) 16px calc(var(--tab-h) + 16px); min-height: 100vh; }
     .page.active { display: block; }
 
-    input[type="url"], input[type="text"] { width: 100%; padding: 14px 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 0.95rem; outline: none; transition: border-color 0.15s; }
+    /* INPUTS */
+    input[type="url"], input[type="text"] { width: 100%; padding: 13px 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 0.9rem; outline: none; transition: border-color 0.15s; }
     input:focus { border-color: var(--accent); }
+    select { width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-size: 0.82rem; outline: none; }
 
-    select { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-size: 0.82rem; outline: none; }
-
-    .btn { width: 100%; padding: 15px; border-radius: var(--radius); border: none; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: opacity 0.15s, transform 0.1s; }
+    /* BUTTONS */
+    .btn { width: 100%; padding: 13px; border-radius: var(--radius); border: none; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: opacity 0.15s, transform 0.1s; }
     .btn:active { transform: scale(0.98); }
     .btn:disabled { opacity: 0.4; pointer-events: none; }
     .btn-primary { background: var(--accent); color: #fff; }
     .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-success { background: #1a3a1a; color: var(--success); border: 1px solid #2a5a2a; }
     .btn-danger { background: #3a0d0d; color: var(--error); border: 1px solid #5a1a1a; }
-    .btn-sm { width: auto; padding: 7px 12px; font-size: 0.75rem; border-radius: 8px; }
+    .btn-sm { width: auto; padding: 6px 11px; font-size: 0.72rem; border-radius: 8px; }
 
-    .status { margin-top: 16px; padding: 14px 16px; border-radius: var(--radius); font-size: 0.9rem; display: none; line-height: 1.4; }
+    /* STATUS */
+    .status { margin-top: 14px; padding: 13px 16px; border-radius: var(--radius); font-size: 0.88rem; display: none; line-height: 1.4; }
     .status.show { display: block; }
     .status.ok { background: #0d2b1a; color: var(--success); border: 1px solid #1a4a2a; }
     .status.err { background: #2b0d0d; color: var(--error); border: 1px solid #4a1a1a; }
     .status.loading { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
 
-    .section-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; margin-top: 28px; }
+    /* LABELS */
+    .section-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; margin-top: 24px; }
     .section-label:first-child { margin-top: 0; }
 
+    /* CARDS */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .card-icon { font-size: 1.4rem; flex-shrink: 0; }
+    .card-info { flex: 1; min-width: 0; }
+    .card-title { font-size: 0.84rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-meta { font-size: 0.7rem; color: var(--muted); margin-top: 3px; }
+    .card-actions { display: flex; gap: 5px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+
+    /* STATUS BADGE */
+    .badge { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 0.65rem; font-weight: 700; }
+    .badge-queued { background: #1a1a2e; color: #888; border: 1px solid #333; }
+    .badge-downloaded { background: #0d2b1a; color: var(--success); border: 1px solid #1a4a2a; }
+    .badge-failed { background: #2b0d0d; color: var(--error); border: 1px solid #4a1a1a; }
+    .badge-downloading { background: var(--surface2); color: var(--accent); border: 1px solid var(--border); }
+
+    /* VIDEO GRID */
     .video-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .video-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; cursor: pointer; transition: border-color 0.15s; position: relative; }
     .video-card.selected { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(225,48,108,0.2); }
-    .video-card-thumb { width: 100%; aspect-ratio: 9/16; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 2rem; overflow: hidden; }
+    .video-card-thumb { width: 100%; aspect-ratio: 9/16; background: var(--surface2); display: flex; align-items: center; justify-content: center; overflow: hidden; }
     .video-card-thumb video { width: 100%; height: 100%; object-fit: cover; }
-    .video-card-info { padding: 8px 10px; }
-    .video-card-name { font-size: 0.75rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
-    .video-card-size { font-size: 0.68rem; color: var(--muted); margin-top: 2px; }
-    .video-card-actions { display: flex; gap: 6px; padding: 0 10px 10px; flex-wrap: wrap; }
-    .selected-badge { position: absolute; top: 6px; right: 6px; background: var(--accent); color: #fff; font-size: 0.7rem; font-weight: 800; width: 22px; height: 22px; border-radius: 50%; display: none; align-items: center; justify-content: center; }
+    .video-card-info { padding: 7px 10px; }
+    .video-card-name { font-size: 0.72rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .video-card-size { font-size: 0.65rem; color: var(--muted); margin-top: 2px; }
+    .video-card-actions { display: flex; gap: 5px; padding: 0 8px 8px; flex-wrap: wrap; }
+    .selected-badge { position: absolute; top: 6px; right: 6px; background: var(--accent); color: #fff; font-size: 0.68rem; font-weight: 800; width: 20px; height: 20px; border-radius: 50%; display: none; align-items: center; justify-content: center; }
     .video-card.selected .selected-badge { display: flex; }
-
-    /* COMPILATION CARD */
-    .compilation-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-    .compilation-card-icon { font-size: 1.6rem; flex-shrink: 0; }
-    .compilation-card-info { flex: 1; min-width: 0; }
-    .compilation-card-name { font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .compilation-card-size { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
-    .compilation-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
     /* CLIP LIST */
     .clip-list { display: flex; flex-direction: column; gap: 8px; }
     .clip-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; display: flex; align-items: flex-start; gap: 10px; touch-action: none; user-select: none; }
     .clip-item.dragging { opacity: 0.4; border-color: var(--accent); }
     .clip-item.drag-over { border-color: var(--accent); background: #1a0d12; }
-    .clip-drag-handle { color: var(--muted); font-size: 1.1rem; cursor: grab; padding: 4px; flex-shrink: 0; margin-top: 2px; }
-    .clip-thumb { width: 44px; height: 44px; border-radius: 6px; background: var(--surface2); overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+    .clip-drag-handle { color: var(--muted); font-size: 1rem; cursor: grab; padding: 4px; flex-shrink: 0; margin-top: 2px; }
+    .clip-thumb { width: 40px; height: 40px; border-radius: 6px; background: var(--surface2); overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
     .clip-thumb video { width: 100%; height: 100%; object-fit: cover; }
     .clip-info { flex: 1; min-width: 0; }
-    .clip-name { font-size: 0.78rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 6px; }
+    .clip-name { font-size: 0.75rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 5px; }
     .clip-trim { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-    .clip-trim-label { font-size: 0.68rem; color: var(--muted); }
-    .clip-trim select { width: 80px; padding: 5px 8px; font-size: 0.75rem; }
-    .clip-remove { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; padding: 4px; flex-shrink: 0; }
+    .clip-trim-label { font-size: 0.65rem; color: var(--muted); }
+    .clip-trim select { width: 75px; padding: 4px 7px; font-size: 0.72rem; }
+    .clip-remove { background: none; border: none; color: var(--muted); font-size: 1rem; cursor: pointer; padding: 4px; flex-shrink: 0; }
     .clip-remove:hover { color: var(--error); }
 
-    .preview-wrap { background: #000; border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; margin-bottom: 12px; aspect-ratio: 9/16; max-height: 50vh; display: flex; align-items: center; justify-content: center; }
+    /* PREVIEW */
+    .preview-wrap { background: #000; border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; margin-bottom: 12px; aspect-ratio: 9/16; max-height: 45vh; display: flex; align-items: center; justify-content: center; }
     .preview-wrap video { max-width: 100%; max-height: 100%; }
 
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 200; display: none; flex-direction: column; }
-    .modal-overlay.show { display: flex; }
-    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); }
-    .modal-title { font-size: 0.85rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80%; }
-    .modal-close { background: none; border: none; color: var(--text); font-size: 1.4rem; cursor: pointer; padding: 4px; line-height: 1; }
-    .modal-video-wrap { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    /* MODALS */
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 200; display: none; flex-direction: column; }
+    .modal.show { display: flex; }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .modal-title { font-size: 0.9rem; font-weight: 700; }
+    .modal-close { background: none; border: none; color: var(--text); font-size: 1.3rem; cursor: pointer; padding: 4px; }
+    .modal-body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .modal-footer { display: flex; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--border); flex-shrink: 0; }
+    .modal-footer .btn { flex: 1; padding: 13px; font-size: 0.88rem; }
+    .modal-video-wrap { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #000; }
     .modal-video-wrap video { max-width: 100%; max-height: 100%; width: 100%; }
-
-    .empty { text-align: center; padding: 60px 24px; color: var(--muted); }
-    .empty span { font-size: 3rem; display: block; margin-bottom: 12px; }
-    .empty p { font-size: 0.88rem; line-height: 1.6; }
-
-    .compile-empty { text-align: center; padding: 48px 24px; color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
-    .compile-empty span { font-size: 2.5rem; display: block; margin-bottom: 12px; }
-
-    .toast { position: fixed; bottom: calc(var(--tab-h) + 12px); left: 16px; right: 16px; background: var(--surface2); color: var(--text); padding: 12px 16px; border-radius: var(--radius); font-size: 0.88rem; z-index: 300; transform: translateY(20px); opacity: 0; transition: all 0.2s; border: 1px solid var(--border); text-align: center; }
-    .toast.show { transform: translateY(0); opacity: 1; }
-
-    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--muted); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-
-    /* BROWSE */
-    .browse-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-    .browse-card-info { flex: 1; min-width: 0; }
-    .browse-card-title { font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .browse-card-meta { font-size: 0.72rem; color: var(--muted); margin-top: 3px; }
-    .browse-card-btn { flex-shrink: 0; }
-
-    /* TRIM MODAL */
-    .trim-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 250; display: none; flex-direction: column; }
-    .trim-modal.show { display: flex; }
-    .trim-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); }
-    .trim-modal-title { font-size: 0.9rem; font-weight: 700; }
-    .trim-modal-body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
-    .trim-video-wrap { background: #000; border-radius: var(--radius); overflow: hidden; aspect-ratio: 9/16; max-height: 40vh; display: flex; align-items: center; justify-content: center; }
+    .trim-video-wrap { background: #000; border-radius: var(--radius); overflow: hidden; aspect-ratio: 9/16; max-height: 38vh; display: flex; align-items: center; justify-content: center; }
     .trim-video-wrap video { max-width: 100%; max-height: 100%; }
     .trim-row { display: flex; gap: 10px; align-items: center; }
-    .trim-row label { font-size: 0.78rem; color: var(--muted); min-width: 36px; }
+    .trim-row label { font-size: 0.75rem; color: var(--muted); min-width: 36px; }
     .trim-row select { flex: 1; }
-    .trim-actions { display: flex; gap: 10px; padding: 0 16px 16px; }
-    .trim-actions .btn { flex: 1; padding: 14px; font-size: 0.88rem; }
+
+    /* EMPTY */
+    .empty { text-align: center; padding: 48px 24px; color: var(--muted); }
+    .empty span { font-size: 2.5rem; display: block; margin-bottom: 10px; }
+    .empty p { font-size: 0.85rem; line-height: 1.6; }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: calc(var(--tab-h) + 12px); left: 16px; right: 16px; background: var(--surface2); color: var(--text); padding: 11px 16px; border-radius: var(--radius); font-size: 0.85rem; z-index: 300; transform: translateY(20px); opacity: 0; transition: all 0.2s; border: 1px solid var(--border); text-align: center; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid var(--muted); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 5px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* DESKTOP LAYOUT */
+    @media (min-width: 768px) {
+      .page { max-width: 700px; margin: 0 auto; }
+      .video-grid { grid-template-columns: 1fr 1fr 1fr; }
+    }
   </style>
 </head>
 <body>
 
+  <!-- HEADER -->
   <header class="header">
     <div class="header-logo">InstaGet</div>
-    <div class="header-badge">personal</div>
+    <div class="server-input-wrap">
+      <div class="server-dot" id="server-dot"></div>
+      <input type="text" id="server-url-input" placeholder="http://localhost:5000"
+        onchange="saveServerUrl()" onblur="checkServer()">
+    </div>
   </header>
 
-  <!-- PAGE: DOWNLOAD -->
-  <div class="page active" id="page-download">
+  <!-- PAGE: BROWSE -->
+  <div class="page active" id="page-browse">
     <div class="section-label">Download a video</div>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <input type="url" id="dl-url" placeholder="Paste Instagram URL…" autocomplete="off" autocorrect="off" spellcheck="false">
-      <button class="btn btn-primary" id="dl-btn" onclick="doDownload()">Download</button>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:4px">
+      <input type="url" id="dl-url" placeholder="Paste Instagram video URL…" autocomplete="off" autocorrect="off" spellcheck="false">
+      <button class="btn btn-primary" id="dl-btn" onclick="doDownload()">⬇️ Download now</button>
     </div>
     <div class="status" id="dl-status"></div>
-    <div class="section-label">Recent downloads</div>
-    <div id="recent-list"></div>
 
-    <div class="section-label" style="margin-top:32px">Browse a profile</div>
-    <div style="display:flex;flex-direction:column;gap:10px">
+    <div class="section-label">Browse a profile</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
       <input type="url" id="browse-url" placeholder="https://www.instagram.com/username/" autocomplete="off" autocorrect="off" spellcheck="false">
-      <button class="btn btn-secondary" id="browse-btn" onclick="doBrowse(false)">Browse</button>
+      <button class="btn btn-secondary" id="browse-btn" onclick="doBrowse(false)">🔍 Browse</button>
     </div>
     <div class="status" id="browse-status"></div>
-    <div id="browse-list" style="margin-top:12px"></div>
+    <div id="browse-list" style="margin-top:10px"></div>
     <div id="browse-more-wrap" style="display:none;margin-top:8px">
-      <button class="btn btn-secondary" onclick="doBrowse(true)">Load 10 more</button>
+      <button class="btn btn-secondary" onclick="doBrowse(true)">Load 10 more…</button>
     </div>
 
+    <div class="section-label">Recent downloads</div>
+    <div id="recent-list"></div>
+  </div>
+
+  <!-- PAGE: QUEUE -->
+  <div class="page" id="page-queue">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="section-label" style="margin:0">Download queue</div>
+      <button class="btn btn-secondary btn-sm" onclick="loadQueue()">↻</button>
+    </div>
+    <div id="queue-list"></div>
   </div>
 
   <!-- PAGE: LIBRARY -->
   <div class="page" id="page-library">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <div class="section-label" style="margin:0">Your videos</div>
-      <button class="btn btn-secondary btn-sm" onclick="loadLibrary()">↻ Refresh</button>
+      <button class="btn btn-secondary btn-sm" onclick="loadLibrary()">↻</button>
     </div>
     <div id="library-grid" class="video-grid"></div>
   </div>
@@ -185,43 +202,44 @@
   <!-- PAGE: COMPILE -->
   <div class="page" id="page-compile">
     <div class="section-label">Build a compilation</div>
-    <div id="compile-empty" class="compile-empty">
-      <span>🎬</span>
-      Go to <strong>Library</strong>, tap videos to select them, then come back here to arrange and merge.
+    <div id="compile-empty" class="empty">
+      <span>✂️</span>
+      <p>Go to <strong>Library</strong>, tap videos to select them, then come back here.</p>
     </div>
     <div id="compile-content" style="display:none">
       <div class="section-label">Preview</div>
       <div class="preview-wrap">
         <video id="preview-player" controls playsinline></video>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:20px">
-        <button class="btn btn-secondary btn-sm" onclick="previewNext()">▶ Play next</button>
+      <div style="display:flex;gap:8px;margin-bottom:18px">
+        <button class="btn btn-secondary btn-sm" onclick="previewNext()">▶ Next clip</button>
         <button class="btn btn-secondary btn-sm" onclick="previewAll()">▶▶ Play all</button>
       </div>
       <div class="section-label">Clips — drag to reorder</div>
       <div class="clip-list" id="clip-list"></div>
       <div class="section-label">Export</div>
-      <div style="margin-bottom:10px">
-        <input type="text" id="output-name" placeholder="compilation-name" value="my-compilation">
-      </div>
-      <button class="btn btn-primary" id="merge-btn" onclick="doMerge()">Merge & Save</button>
+      <input type="text" id="output-name" value="my-compilation" style="margin-bottom:8px">
+      <button class="btn btn-primary" id="merge-btn" onclick="doMerge()">🎬 Merge & Save</button>
       <div class="status" id="merge-status"></div>
     </div>
   </div>
 
-  <!-- PAGE: COMPILATIONS -->
-  <div class="page" id="page-compilations">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+  <!-- PAGE: MY FILMS -->
+  <div class="page" id="page-films">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <div class="section-label" style="margin:0">Saved compilations</div>
-      <button class="btn btn-secondary btn-sm" onclick="loadCompilationsTab()">↻ Refresh</button>
+      <button class="btn btn-secondary btn-sm" onclick="loadFilms()">↻</button>
     </div>
-    <div id="compilations-tab-list"></div>
+    <div id="films-list"></div>
   </div>
 
   <!-- TABS -->
   <nav class="tabs">
-    <button class="tab active" onclick="switchTab('download',this)">
-      <span class="tab-icon">⬇️</span>Download
+    <button class="tab active" onclick="switchTab('browse',this)">
+      <span class="tab-icon">🔍</span>Browse
+    </button>
+    <button class="tab" onclick="switchTab('queue',this)">
+      <span class="tab-icon">📋</span>Queue
     </button>
     <button class="tab" onclick="switchTab('library',this)">
       <span class="tab-icon">🎞</span>Library
@@ -229,13 +247,13 @@
     <button class="tab" onclick="switchTab('compile',this)">
       <span class="tab-icon">✂️</span>Compile
     </button>
-    <button class="tab" onclick="switchTab('compilations',this)">
-      <span class="tab-icon">🎬</span>My Films
+    <button class="tab" onclick="switchTab('films',this)">
+      <span class="tab-icon">🎬</span>Films
     </button>
   </nav>
 
   <!-- PLAYER MODAL -->
-  <div class="modal-overlay" id="player-modal">
+  <div class="modal" id="player-modal">
     <div class="modal-header">
       <div class="modal-title" id="modal-title"></div>
       <button class="modal-close" onclick="closePlayer()">✕</button>
@@ -245,43 +263,74 @@
     </div>
   </div>
 
-
   <!-- TRIM MODAL -->
-  <div class="trim-modal" id="trim-modal">
-    <div class="trim-modal-header">
-      <div class="trim-modal-title">✂️ Trim video</div>
+  <div class="modal" id="trim-modal">
+    <div class="modal-header">
+      <div class="modal-title">✂️ Trim video</div>
       <button class="modal-close" onclick="closeTrimModal()">✕</button>
     </div>
-    <div class="trim-modal-body">
+    <div class="modal-body">
       <div class="trim-video-wrap">
-        <video id="trim-preview-video" controls playsinline></video>
+        <video id="trim-video" controls playsinline></video>
       </div>
-      <div style="font-size:0.78rem;color:var(--muted);text-align:center" id="trim-filename-label"></div>
+      <div style="font-size:0.75rem;color:var(--muted);text-align:center" id="trim-filename-label"></div>
       <div class="trim-row">
         <label>Start</label>
-        <select id="trim-start-select" onchange="updateTrimPreview()"></select>
+        <select id="trim-start" onchange="updateTrimPreview()"></select>
       </div>
       <div class="trim-row">
         <label>End</label>
-        <select id="trim-end-select" onchange="updateTrimPreview()"></select>
+        <select id="trim-end" onchange="updateTrimPreview()"></select>
       </div>
-      <div style="font-size:0.78rem;color:var(--muted);padding:4px 0" id="trim-duration-label"></div>
+      <div style="font-size:0.75rem;color:var(--muted)" id="trim-duration-label"></div>
     </div>
-    <div class="trim-actions">
-      <button class="btn btn-secondary" onclick="doTrim('copy')" id="trim-copy-btn">Save as copy</button>
-      <button class="btn btn-primary" onclick="doTrim('overwrite')" id="trim-overwrite-btn">Overwrite</button>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="doTrim('copy')" id="trim-copy-btn">Save copy</button>
+      <button class="btn btn-primary" onclick="doTrim('overwrite')" id="trim-over-btn">Overwrite</button>
     </div>
   </div>
 
   <div class="toast" id="toast"></div>
 
 <script>
-  const API = 'http://localhost:5000';
+  // ─── STATE ─────────────────────────────────────────
   let selectedClips = [];
   let previewIndex = 0;
   let dragSrc = null;
-  // Cache of durations: { filename: seconds }
+  let browseOffset = 0;
+  let browseResults = [];
+  let browseDownloadState = {};
+  let trimFilename = null;
   const durationCache = {};
+
+  // ─── SERVER URL ────────────────────────────────────
+  function getAPI() {
+    return (localStorage.getItem('instaget_server') || 'http://localhost:5000').replace(/\/$/, '');
+  }
+
+  function saveServerUrl() {
+    const val = document.getElementById('server-url-input').value.trim();
+    if (val) localStorage.setItem('instaget_server', val);
+  }
+
+  async function checkServer() {
+    const dot = document.getElementById('server-dot');
+    try {
+      const res = await fetch(`${getAPI()}/version`, { signal: AbortSignal.timeout(3000) });
+      const data = await res.json();
+      dot.className = 'server-dot online';
+      dot.title = `v${data.version}`;
+    } catch {
+      dot.className = 'server-dot offline';
+    }
+  }
+
+  function initServerInput() {
+    const saved = localStorage.getItem('instaget_server') || 'http://localhost:5000';
+    document.getElementById('server-url-input').value = saved;
+    checkServer();
+    setInterval(checkServer, 15000);
+  }
 
   // ─── TABS ──────────────────────────────────────────
   function switchTab(name, el) {
@@ -289,21 +338,21 @@
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.getElementById('page-' + name).classList.add('active');
     el.classList.add('active');
+    if (name === 'browse') loadRecent();
+    if (name === 'queue') loadQueue();
     if (name === 'library') loadLibrary();
     if (name === 'compile') loadCompileTab();
-    if (name === 'download') loadRecent();
-    if (name === 'compilations') loadCompilationsTab();
+    if (name === 'films') loadFilms();
   }
 
   // ─── TOAST ─────────────────────────────────────────
   function showToast(msg, duration = 2500) {
     const t = document.getElementById('toast');
-    t.textContent = msg;
+    t.innerHTML = msg;
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), duration);
   }
 
-  // ─── STATUS ────────────────────────────────────────
   function setStatus(id, type, msg) {
     const el = document.getElementById(id);
     el.className = 'status show ' + type;
@@ -315,100 +364,270 @@
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
     return (bytes / 1024 / 1024).toFixed(1) + ' MB';
   }
+  function fmtDur(s) {
+    if (!s) return '';
+    return `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+  }
   function shortName(f) {
-    return f.replace(/\.[^.]+$/, '').replace(/_/g, ' ').slice(0, 28);
+    return f.replace(/\.[^.]+$/, '').replace(/_/g, ' ').slice(0, 35);
+  }
+  function timeAgo(iso) {
+    if (!iso) return '';
+    const diff = Date.now() - new Date(iso).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h/24)}d ago`;
   }
 
   async function getDuration(filename) {
     if (durationCache[filename]) return durationCache[filename];
     try {
-      const res = await fetch(`${API}/video-duration/${encodeURIComponent(filename)}`);
+      const res = await fetch(`${getAPI()}/video-duration/${encodeURIComponent(filename)}`);
       const data = await res.json();
       durationCache[filename] = Math.floor(data.duration || 0);
       return durationCache[filename];
     } catch { return 0; }
   }
 
-  function makeSecondsOptions(duration, selectedVal) {
-    let opts = '<option value="">full</option>';
-    for (let s = 0; s <= duration; s++) {
-      const sel = (selectedVal !== null && selectedVal !== undefined && parseInt(selectedVal) === s) ? 'selected' : '';
-      opts += `<option value="${s}" ${sel}>${s}s</option>`;
-    }
-    return opts;
-  }
-
-  // ─── DOWNLOAD ──────────────────────────────────────
+  // ─── DOWNLOAD NOW ──────────────────────────────────
   async function doDownload() {
     const url = document.getElementById('dl-url').value.trim();
     if (!url) return;
     const btn = document.getElementById('dl-btn');
     btn.disabled = true;
-    setStatus('dl-status', 'loading', '<span class="spinner"></span>Downloading… this may take a minute');
+    setStatus('dl-status', 'loading', '<span class="spinner"></span>Downloading…');
     try {
-      const res = await fetch(`${API}/download`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch(`${getAPI()}/download`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url })
       });
       const data = await res.json();
       if (data.status === 'ok') {
-        setStatus('dl-status', 'ok', '✓ Video saved to Downloads/InstaGet/');
+        setStatus('dl-status', 'ok', '✓ Saved to Downloads/InstaGet/');
         document.getElementById('dl-url').value = '';
         loadRecent();
       } else {
         setStatus('dl-status', 'err', '✗ ' + (data.error || 'Download failed'));
       }
     } catch (e) {
-      setStatus('dl-status', 'err', '✗ Could not reach server — is it running?');
+      setStatus('dl-status', 'err', '✗ Could not reach server');
     }
     btn.disabled = false;
   }
 
   async function loadRecent() {
     try {
-      const res = await fetch(`${API}/videos`);
+      const res = await fetch(`${getAPI()}/videos`);
       const videos = await res.json();
-      const container = document.getElementById('recent-list');
-      if (!videos.length) {
-        container.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:8px 0">No videos yet</div>';
-        return;
-      }
-      container.innerHTML = videos.slice(0, 3).map(v => `
-        <div class="compilation-card">
-          <div class="compilation-card-icon">🎥</div>
-          <div class="compilation-card-info">
-            <div class="compilation-card-name">${shortName(v.filename)}</div>
-            <div class="compilation-card-size">${fmtSize(v.size)}</div>
+      const el = document.getElementById('recent-list');
+      if (!videos.length) { el.innerHTML = '<div style="color:var(--muted);font-size:0.82rem">No videos yet</div>'; return; }
+      el.innerHTML = videos.slice(0, 3).map(v => `
+        <div class="card">
+          <div class="card-icon">🎥</div>
+          <div class="card-info">
+            <div class="card-title">${shortName(v.filename)}</div>
+            <div class="card-meta">${fmtSize(v.size)}</div>
           </div>
-          <div class="compilation-card-actions">
+          <div class="card-actions">
             <button class="btn btn-secondary btn-sm" onclick="openPlayer('${v.filename}','downloads')">▶</button>
             <button class="btn btn-danger btn-sm" onclick="deleteVideo('${v.filename}','downloads')">🗑</button>
           </div>
-        </div>
-      `).join('');
-    } catch (e) {}
+        </div>`).join('');
+    } catch {}
+  }
+
+  // ─── BROWSE ────────────────────────────────────────
+  async function doBrowse(loadMore) {
+    const url = document.getElementById('browse-url').value.trim();
+    if (!url) return;
+    if (!loadMore) {
+      browseOffset = 0; browseResults = []; browseDownloadState = {};
+      document.getElementById('browse-list').innerHTML = '';
+      document.getElementById('browse-more-wrap').style.display = 'none';
+    }
+    document.getElementById('browse-btn').disabled = true;
+    setStatus('browse-status', 'loading', '<span class="spinner"></span>Fetching videos…');
+    try {
+      const res = await fetch(`${getAPI()}/browse`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, offset: browseOffset, limit: 10 })
+      });
+      const data = await res.json();
+      if (data.error) { setStatus('browse-status', 'err', '✗ ' + data.error); return; }
+      if (!data.videos.length && !loadMore) { setStatus('browse-status', 'err', '✗ No videos found — is this a public profile?'); return; }
+      browseResults = browseResults.concat(data.videos);
+      browseOffset += data.videos.length;
+      document.getElementById('browse-status').className = 'status';
+      renderBrowseList();
+      document.getElementById('browse-more-wrap').style.display = data.videos.length === 10 ? 'block' : 'none';
+    } catch {
+      setStatus('browse-status', 'err', '✗ Could not reach server');
+    }
+    document.getElementById('browse-btn').disabled = false;
+  }
+
+  function renderBrowseList() {
+    const el = document.getElementById('browse-list');
+    el.innerHTML = browseResults.map((v, i) => {
+      const state = browseDownloadState[v.url] || 'idle';
+      const dur = v.duration ? fmtDur(parseFloat(v.duration)) : '';
+      let actionHtml = '';
+      if (state === 'idle') {
+        actionHtml = `
+          <button class="btn btn-secondary btn-sm" onclick="addToQueue(${i})" title="Add to Queue">＋Queue</button>
+          <button class="btn btn-primary btn-sm" onclick="downloadBrowsed(${i})" title="Download now">⬇️</button>`;
+      } else if (state === 'loading') {
+        actionHtml = `<button class="btn btn-secondary btn-sm" disabled><span class="spinner"></span></button>`;
+      } else if (state === 'done') {
+        actionHtml = `
+          <button class="btn btn-secondary btn-sm" onclick="addToQueue(${i})">＋Queue</button>
+          <button class="btn btn-success btn-sm" disabled>✓ Done</button>`;
+      } else if (state === 'queued') {
+        actionHtml = `
+          <button class="btn btn-success btn-sm" disabled>✓ Queued</button>
+          <button class="btn btn-primary btn-sm" onclick="downloadBrowsed(${i})">⬇️</button>`;
+      } else if (state === 'error') {
+        actionHtml = `
+          <button class="btn btn-secondary btn-sm" onclick="addToQueue(${i})">＋Queue</button>
+          <button class="btn btn-danger btn-sm" onclick="downloadBrowsed(${i})">↺ Retry</button>`;
+      }
+      return `
+        <div class="card">
+          <div class="card-icon">🎥</div>
+          <div class="card-info">
+            <div class="card-title">${v.title}</div>
+            <div class="card-meta">${dur}</div>
+          </div>
+          <div class="card-actions">${actionHtml}</div>
+        </div>`;
+    }).join('');
+  }
+
+  async function addToQueue(index) {
+    const v = browseResults[index];
+    try {
+      const res = await fetch(`${getAPI()}/queue/add`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: v.url, title: v.title })
+      });
+      const data = await res.json();
+      if (data.status === 'ok' || data.status === 'exists') {
+        browseDownloadState[v.url] = 'queued';
+        renderBrowseList();
+        showToast(data.status === 'exists' ? 'Already in queue' : '✓ Added to queue');
+      }
+    } catch { showToast('✗ Could not reach server'); }
+  }
+
+  async function downloadBrowsed(index) {
+    const v = browseResults[index];
+    browseDownloadState[v.url] = 'loading';
+    renderBrowseList();
+    try {
+      const res = await fetch(`${getAPI()}/download`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: v.url })
+      });
+      const data = await res.json();
+      browseDownloadState[v.url] = data.status === 'ok' ? 'done' : 'error';
+      if (data.status === 'ok') showToast(`✓ Downloaded: ${v.title.slice(0,25)}`);
+      else showToast('✗ Failed: ' + (data.error || '').slice(0, 60), 4000);
+    } catch {
+      browseDownloadState[v.url] = 'error';
+      showToast('✗ Could not reach server');
+    }
+    renderBrowseList();
+  }
+
+  // ─── QUEUE ─────────────────────────────────────────
+  async function loadQueue() {
+    const el = document.getElementById('queue-list');
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;padding:16px 0">Loading…</div>';
+    try {
+      const res = await fetch(`${getAPI()}/queue`);
+      const queue = await res.json();
+      if (!queue.length) {
+        el.innerHTML = `<div class="empty"><span>📋</span><p>Queue is empty.<br>Browse a profile and tap ＋Queue to add videos.</p></div>`;
+        return;
+      }
+      el.innerHTML = queue.map(item => {
+        const badgeClass = `badge-${item.last_status}`;
+        const badgeLabel = item.last_status;
+        const meta = item.last_downloaded ? `Last downloaded ${timeAgo(item.last_downloaded)}` : `Added ${timeAgo(item.added)}`;
+        return `
+          <div class="card" id="qcard-${item.id}">
+            <div class="card-icon">🎥</div>
+            <div class="card-info">
+              <div class="card-title">${item.title}</div>
+              <div class="card-meta" style="display:flex;gap:6px;align-items:center;margin-top:4px">
+                <span class="badge ${badgeClass}">${badgeLabel}</span>
+                <span>${meta}</span>
+              </div>
+            </div>
+            <div class="card-actions">
+              <button class="btn btn-primary btn-sm" onclick="downloadQueued('${item.id}','${item.url.replace(/'/g,"\\'")}')">⬇️</button>
+              <button class="btn btn-danger btn-sm" onclick="removeFromQueue('${item.id}')">🗑</button>
+            </div>
+          </div>`;
+      }).join('');
+    } catch {
+      el.innerHTML = `<div style="color:var(--error);font-size:0.82rem">Could not load queue</div>`;
+    }
+  }
+
+  async function downloadQueued(id, url) {
+    const card = document.getElementById(`qcard-${id}`);
+    if (card) card.style.opacity = '0.5';
+    showToast('<span class="spinner"></span>Downloading…', 60000);
+    try {
+      const res = await fetch(`${getAPI()}/download`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, queue_id: id })
+      });
+      const data = await res.json();
+      if (data.status === 'ok') {
+        showToast('✓ Downloaded!');
+      } else {
+        showToast('✗ Failed: ' + (data.error || '').slice(0, 60), 4000);
+      }
+    } catch {
+      showToast('✗ Could not reach server');
+    }
+    loadQueue();
+  }
+
+  async function removeFromQueue(id) {
+    if (!confirm('Remove from queue?')) return;
+    await fetch(`${getAPI()}/queue/remove`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    });
+    loadQueue();
+    showToast('Removed from queue');
   }
 
   // ─── LIBRARY ───────────────────────────────────────
   async function loadLibrary() {
     const grid = document.getElementById('library-grid');
-    grid.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:16px 0">Loading…</div>';
+    grid.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;padding:16px 0">Loading…</div>';
     try {
-      const res = await fetch(`${API}/videos`);
+      const res = await fetch(`${getAPI()}/videos`);
       const videos = await res.json();
       if (!videos.length) {
-        grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><span>📭</span><p>No videos yet.<br>Go to Download and grab some.</p></div>`;
+        grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><span>📭</span><p>No videos yet.</p></div>`;
         return;
       }
       grid.innerHTML = videos.map(v => {
-        const selected = selectedClips.find(c => c.filename === v.filename);
-        const idx = selected ? selectedClips.indexOf(selected) + 1 : 0;
+        const sel = selectedClips.find(c => c.filename === v.filename);
+        const idx = sel ? selectedClips.indexOf(sel) + 1 : 0;
         return `
-          <div class="video-card ${selected ? 'selected' : ''}" onclick="toggleSelect('${v.filename}')">
+          <div class="video-card ${sel ? 'selected' : ''}" onclick="toggleSelect('${v.filename}')">
             <div class="selected-badge">${idx || ''}</div>
             <div class="video-card-thumb">
-              <video src="${API}/video/${encodeURIComponent(v.filename)}" preload="metadata" playsinline muted></video>
+              <video src="${getAPI()}/video/${encodeURIComponent(v.filename)}" preload="metadata" playsinline muted></video>
             </div>
             <div class="video-card-info">
               <div class="video-card-name">${shortName(v.filename)}</div>
@@ -416,13 +635,13 @@
             </div>
             <div class="video-card-actions">
               <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openPlayer('${v.filename}','downloads')">▶</button>
-              <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openTrimModal('${v.filename}')">✂️</button><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteVideo('${v.filename}','downloads')">🗑</button>
+              <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openTrimModal('${v.filename}')">✂️</button>
+              <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteVideo('${v.filename}','downloads')">🗑</button>
             </div>
-          </div>
-        `;
+          </div>`;
       }).join('');
-    } catch (e) {
-      grid.innerHTML = `<div style="color:var(--error);font-size:0.85rem;padding:16px 0">Could not load — is the server running?</div>`;
+    } catch {
+      grid.innerHTML = `<div style="color:var(--error);font-size:0.82rem;padding:16px 0">Could not load — is the server running?</div>`;
     }
   }
 
@@ -441,455 +660,214 @@
   async function deleteVideo(filename, folder) {
     if (!confirm(`Delete "${shortName(filename)}"?`)) return;
     selectedClips = selectedClips.filter(c => c.filename !== filename);
-    await fetch(`${API}/delete`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    await fetch(`${getAPI()}/delete`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ filename, folder })
     });
     if (folder === 'downloads') { loadLibrary(); loadRecent(); }
-    else loadCompilationsTab();
+    else loadFilms();
     showToast('Deleted');
   }
 
   async function moveToLibrary(filename) {
-    if (!confirm(`Move "${shortName(filename)}" to Library so you can use it in future compilations?`)) return;
-    const res = await fetch(`${API}/move-to-library`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    if (!confirm(`Move "${shortName(filename)}" to Library?`)) return;
+    const res = await fetch(`${getAPI()}/move-to-library`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ filename })
     });
     const data = await res.json();
-    if (data.status === 'ok') {
-      showToast('Moved to Library ✓');
-      loadCompilationsTab();
-    } else {
-      showToast('Move failed: ' + data.error);
-    }
+    if (data.status === 'ok') { showToast('Moved to Library ✓'); loadFilms(); }
+    else showToast('Move failed: ' + data.error);
   }
 
   // ─── PLAYER MODAL ──────────────────────────────────
   function openPlayer(filename, folder) {
-    const modal = document.getElementById('player-modal');
-    const video = document.getElementById('modal-video');
-    const title = document.getElementById('modal-title');
-    title.textContent = shortName(filename);
     const src = folder === 'compilations'
-      ? `${API}/compilations/${encodeURIComponent(filename)}`
-      : `${API}/video/${encodeURIComponent(filename)}`;
-    video.src = src;
-    video.load();
-    video.play();
-    modal.classList.add('show');
+      ? `${getAPI()}/compilations/${encodeURIComponent(filename)}`
+      : `${getAPI()}/video/${encodeURIComponent(filename)}`;
+    document.getElementById('modal-title').textContent = shortName(filename);
+    const v = document.getElementById('modal-video');
+    v.src = src; v.load(); v.play();
+    document.getElementById('player-modal').classList.add('show');
   }
 
   function closePlayer() {
-    const video = document.getElementById('modal-video');
-    video.pause();
-    video.src = '';
+    const v = document.getElementById('modal-video');
+    v.pause(); v.src = '';
     document.getElementById('player-modal').classList.remove('show');
   }
 
-  // ─── COMPILATIONS TAB ──────────────────────────────
-  async function loadCompilationsTab() {
-    const container = document.getElementById('compilations-tab-list');
-    container.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:16px 0">Loading…</div>';
-    try {
-      const res = await fetch(`${API}/compilations`);
-      const videos = await res.json();
-      if (!videos.length) {
-        container.innerHTML = `<div class="empty"><span>🎞</span><p>No compilations yet.<br>Go to Compile and merge some clips.</p></div>`;
-        return;
-      }
-      container.innerHTML = videos.map(v => `
-        <div class="compilation-card">
-          <div class="compilation-card-icon">🎞</div>
-          <div class="compilation-card-info">
-            <div class="compilation-card-name">${shortName(v.filename)}</div>
-            <div class="compilation-card-size">${fmtSize(v.size)}</div>
-          </div>
-          <div class="compilation-card-actions">
-            <button class="btn btn-secondary btn-sm" onclick="openPlayer('${v.filename}','compilations')" title="Play">▶</button>
-            <button class="btn btn-secondary btn-sm" onclick="moveToLibrary('${v.filename}')" title="Move to Library">📥</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteVideo('${v.filename}','compilations')" title="Delete">🗑</button>
-          </div>
-        </div>
-      `).join('');
-    } catch (e) {
-      container.innerHTML = `<div style="color:var(--error);font-size:0.85rem">Could not load — is the server running?</div>`;
-    }
-  }
-
-  // ─── COMPILE TAB ───────────────────────────────────
-  function loadCompileTab() {
-    const empty = document.getElementById('compile-empty');
-    const content = document.getElementById('compile-content');
-    if (!selectedClips.length) {
-      empty.style.display = 'block';
-      content.style.display = 'none';
-      return;
-    }
-    empty.style.display = 'none';
-    content.style.display = 'block';
-    renderClipList();
-    setPreviewClip(0);
-  }
-
-  async function renderClipList() {
-    const list = document.getElementById('clip-list');
-    // Fetch durations for all clips
-    await Promise.all(selectedClips.map(c => getDuration(c.filename)));
-
-    list.innerHTML = selectedClips.map((clip, i) => {
-      const dur = durationCache[clip.filename] || 0;
-      return `
-        <div class="clip-item" draggable="true"
-          ondragstart="onDragStart(event,${i})"
-          ondragover="onDragOver(event,${i})"
-          ondrop="onDrop(event,${i})"
-          ondragend="onDragEnd()"
-          id="clip-item-${i}">
-          <div class="clip-drag-handle">⠿</div>
-          <div class="clip-thumb">
-            <video src="${API}/video/${encodeURIComponent(clip.filename)}" preload="metadata" muted playsinline></video>
-          </div>
-          <div class="clip-info">
-            <div class="clip-name">${shortName(clip.filename)}</div>
-            <div class="clip-trim">
-              <span class="clip-trim-label">Start</span>
-              <select onchange="updateClipTrim(${i},'start',this.value)" onclick="event.stopPropagation()">
-                <option value="0" ${!clip.start ? 'selected' : ''}>0s</option>
-                ${Array.from({length: dur}, (_,s) => s+1).map(s =>
-                  `<option value="${s}" ${clip.start == s ? 'selected' : ''}>${s}s</option>`
-                ).join('')}
-              </select>
-              <span class="clip-trim-label">End</span>
-              <select onchange="updateClipTrim(${i},'end',this.value)" onclick="event.stopPropagation()">
-                <option value="" ${!clip.end ? 'selected' : ''}>full</option>
-                ${Array.from({length: dur}, (_,s) => s+1).map(s =>
-                  `<option value="${s}" ${clip.end == s ? 'selected' : ''}>${s}s</option>`
-                ).join('')}
-              </select>
-            </div>
-          </div>
-          <button class="clip-remove" onclick="removeClip(${i})">✕</button>
-        </div>
-      `;
-    }).join('');
-  }
-
-  function updateClipTrim(i, key, val) {
-    selectedClips[i][key] = val === '' ? null : parseFloat(val);
-  }
-
-  function removeClip(i) {
-    selectedClips.splice(i, 1);
-    loadCompileTab();
-  }
-
-  // ─── DRAG REORDER ──────────────────────────────────
-  function onDragStart(e, i) {
-    dragSrc = i;
-    document.getElementById(`clip-item-${i}`).classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
-  }
-  function onDragOver(e, i) {
-    e.preventDefault();
-    document.querySelectorAll('.clip-item').forEach(el => el.classList.remove('drag-over'));
-    document.getElementById(`clip-item-${i}`).classList.add('drag-over');
-  }
-  function onDrop(e, i) {
-    e.preventDefault();
-    if (dragSrc === null || dragSrc === i) return;
-    const moved = selectedClips.splice(dragSrc, 1)[0];
-    selectedClips.splice(i, 0, moved);
-    renderClipList();
-  }
-  function onDragEnd() {
-    dragSrc = null;
-    document.querySelectorAll('.clip-item').forEach(el => {
-      el.classList.remove('dragging');
-      el.classList.remove('drag-over');
-    });
-  }
-
-  // ─── PREVIEW ───────────────────────────────────────
-  function setPreviewClip(index) {
-    previewIndex = index;
-    if (index >= selectedClips.length) return;
-    const clip = selectedClips[index];
-    const player = document.getElementById('preview-player');
-    player.src = `${API}/video/${encodeURIComponent(clip.filename)}`;
-    player.currentTime = clip.start || 0;
-    player.load();
-  }
-
-  function previewNext() {
-    const clip = selectedClips[previewIndex];
-    const player = document.getElementById('preview-player');
-    player.src = `${API}/video/${encodeURIComponent(clip.filename)}`;
-    player.currentTime = clip.start || 0;
-    player.onended = null;
-    player.play();
-  }
-
-  function previewAll() {
-    previewIndex = 0;
-    playClipAt(0);
-  }
-
-  function playClipAt(index) {
-    if (index >= selectedClips.length) return;
-    const clip = selectedClips[index];
-    const player = document.getElementById('preview-player');
-    player.src = `${API}/video/${encodeURIComponent(clip.filename)}`;
-    player.currentTime = clip.start || 0;
-    player.load();
-    player.play();
-    player.ontimeupdate = () => {
-      if (clip.end && player.currentTime >= clip.end) {
-        player.pause();
-        player.ontimeupdate = null;
-        playClipAt(index + 1);
-      }
-    };
-    player.onended = () => {
-      player.ontimeupdate = null;
-      playClipAt(index + 1);
-    };
-  }
-
-  // ─── MERGE ─────────────────────────────────────────
-  async function doMerge() {
-    if (!selectedClips.length) return;
-    const outputName = document.getElementById('output-name').value.trim() || 'compilation';
-    const btn = document.getElementById('merge-btn');
-    btn.disabled = true;
-    setStatus('merge-status', 'loading', '<span class="spinner"></span>Merging… ffmpeg is working, this may take a while');
-    try {
-      const res = await fetch(`${API}/merge`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clips: selectedClips, output_name: outputName })
-      });
-      const data = await res.json();
-      if (data.status === 'ok') {
-        setStatus('merge-status', 'ok', `✓ Saved as ${data.output} — check My Films tab`);
-        selectedClips = [];
-        showToast('Compilation saved! 🎉');
-      } else {
-        setStatus('merge-status', 'err', '✗ Merge failed: ' + (data.error || 'unknown error'));
-      }
-    } catch (e) {
-      setStatus('merge-status', 'err', '✗ Could not reach server');
-    }
-    btn.disabled = false;
-  }
-
-
-
-  // ─── BROWSE PROFILE ────────────────────────────────
-  let browseOffset = 0;
-  let browseResults = [];
-  // Track per-video download state: { url: 'idle'|'loading'|'done'|'error' }
-  let browseDownloadState = {};
-
-  async function doBrowse(loadMore) {
-    const url = document.getElementById('browse-url').value.trim();
-    if (!url) return;
-    if (!loadMore) {
-      browseOffset = 0;
-      browseResults = [];
-      browseDownloadState = {};
-      document.getElementById('browse-list').innerHTML = '';
-      document.getElementById('browse-more-wrap').style.display = 'none';
-    }
-    const btn = document.getElementById('browse-btn');
-    const moreBtn = document.querySelector('#browse-more-wrap button');
-    btn.disabled = true;
-    if (moreBtn) moreBtn.disabled = true;
-    setStatus('browse-status', 'loading', '<span class="spinner"></span>Fetching videos… this may take a moment');
-
-    try {
-      const res = await fetch(`${API}/browse`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, offset: browseOffset, limit: 10 })
-      });
-      const data = await res.json();
-      if (data.error) {
-        setStatus('browse-status', 'err', '✗ ' + data.error);
-        btn.disabled = false;
-        if (moreBtn) moreBtn.disabled = false;
-        return;
-      }
-
-      if (!data.videos.length && !loadMore) {
-        setStatus('browse-status', 'err', '✗ No videos found — is this a public profile?');
-        btn.disabled = false;
-        return;
-      }
-
-      browseResults = browseResults.concat(data.videos);
-      browseOffset += data.videos.length;
-
-      const hideStatus = data.videos.length > 0;
-      if (hideStatus) {
-        document.getElementById('browse-status').className = 'status';
-      }
-
-      renderBrowseList();
-
-      // Show load more if we got a full page
-      document.getElementById('browse-more-wrap').style.display =
-        data.videos.length === 10 ? 'block' : 'none';
-
-    } catch (e) {
-      setStatus('browse-status', 'err', '✗ Could not reach server');
-    }
-    btn.disabled = false;
-    if (moreBtn) moreBtn.disabled = false;
-  }
-
-  function renderBrowseList() {
-    const container = document.getElementById('browse-list');
-    container.innerHTML = browseResults.map((v, i) => {
-      const state = browseDownloadState[v.url] || 'idle';
-      const duration = v.duration ? `${Math.floor(v.duration / 60)}:${String(Math.floor(v.duration % 60)).padStart(2,'0')}` : '';
-      let btnHtml = '';
-      if (state === 'idle') {
-        btnHtml = `<button class="btn btn-primary btn-sm browse-card-btn" onclick="downloadBrowsed(${i})">⬇️</button>`;
-      } else if (state === 'loading') {
-        btnHtml = `<button class="btn btn-secondary btn-sm browse-card-btn" disabled><span class="spinner"></span></button>`;
-      } else if (state === 'done') {
-        btnHtml = `<button class="btn btn-secondary btn-sm browse-card-btn" disabled style="color:var(--success)">✓</button>`;
-      } else if (state === 'error') {
-        btnHtml = `<button class="btn btn-danger btn-sm browse-card-btn" onclick="downloadBrowsed(${i})">↺</button>`;
-      }
-      return `
-        <div class="browse-card" id="browse-card-${i}">
-          <div class="browse-card-info">
-            <div class="browse-card-title">${v.title}</div>
-            <div class="browse-card-meta">${duration}</div>
-          </div>
-          ${btnHtml}
-        </div>
-      `;
-    }).join('');
-  }
-
-  async function downloadBrowsed(index) {
-    const v = browseResults[index];
-    browseDownloadState[v.url] = 'loading';
-    renderBrowseList();
-    try {
-      const res = await fetch(`${API}/download`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: v.url })
-      });
-      const data = await res.json();
-      if (data.status === 'ok') {
-        browseDownloadState[v.url] = 'done';
-        showToast(`✓ Downloaded: ${v.title.slice(0,30)}`);
-      } else {
-        browseDownloadState[v.url] = 'error';
-        showToast('✗ Download failed', 3000);
-      }
-    } catch (e) {
-      browseDownloadState[v.url] = 'error';
-      showToast('✗ Could not reach server', 3000);
-    }
-    renderBrowseList();
-  }
-
   // ─── TRIM MODAL ────────────────────────────────────
-  let trimFilename = null;
-
   async function openTrimModal(filename) {
     trimFilename = filename;
     const dur = await getDuration(filename);
-    const video = document.getElementById('trim-preview-video');
-    video.src = `${API}/video/${encodeURIComponent(filename)}`;
-    video.load();
+    const v = document.getElementById('trim-video');
+    v.src = `${getAPI()}/video/${encodeURIComponent(filename)}`;
+    v.load();
     document.getElementById('trim-filename-label').textContent = shortName(filename);
-
-    // Build start options 0..dur-1
-    const startSel = document.getElementById('trim-start-select');
-    const endSel = document.getElementById('trim-end-select');
-    startSel.innerHTML = Array.from({length: dur}, (_, s) =>
-      `<option value="${s}">${s}s</option>`
-    ).join('');
+    const startSel = document.getElementById('trim-start');
+    const endSel = document.getElementById('trim-end');
+    startSel.innerHTML = Array.from({length: dur}, (_, s) => `<option value="${s}">${s}s</option>`).join('');
     endSel.innerHTML = '<option value="">full</option>' +
-      Array.from({length: dur}, (_, s) =>
-        `<option value="${s+1}">${s+1}s</option>`
-      ).join('');
-    startSel.value = '0';
-    endSel.value = '';
+      Array.from({length: dur}, (_, s) => `<option value="${s+1}">${s+1}s</option>`).join('');
+    startSel.value = '0'; endSel.value = '';
     updateTrimPreview();
     document.getElementById('trim-modal').classList.add('show');
   }
 
   function updateTrimPreview() {
-    const start = parseInt(document.getElementById('trim-start-select').value) || 0;
-    const end = document.getElementById('trim-end-select').value;
-    const video = document.getElementById('trim-preview-video');
-    video.currentTime = start;
+    const start = parseInt(document.getElementById('trim-start').value) || 0;
+    const end = document.getElementById('trim-end').value;
+    document.getElementById('trim-video').currentTime = start;
     const dur = durationCache[trimFilename] || 0;
     const endVal = end ? parseInt(end) : dur;
-    const trimmed = Math.max(0, endVal - start);
     document.getElementById('trim-duration-label').textContent =
-      `Trimmed duration: ${trimmed}s (original: ${dur}s)`;
+      `Trimmed: ${Math.max(0, endVal - start)}s (original: ${dur}s)`;
   }
 
   function closeTrimModal() {
-    const video = document.getElementById('trim-preview-video');
-    video.pause();
-    video.src = '';
+    const v = document.getElementById('trim-video');
+    v.pause(); v.src = '';
     document.getElementById('trim-modal').classList.remove('show');
     trimFilename = null;
   }
 
   async function doTrim(mode) {
     if (!trimFilename) return;
-    const start = parseInt(document.getElementById('trim-start-select').value) || 0;
-    const end = document.getElementById('trim-end-select').value || null;
-    const copyBtn = document.getElementById('trim-copy-btn');
-    const overBtn = document.getElementById('trim-overwrite-btn');
-    copyBtn.disabled = true;
-    overBtn.disabled = true;
-
-    if (mode === 'overwrite' && !confirm('This will replace the original file. Are you sure?')) {
-      copyBtn.disabled = false;
-      overBtn.disabled = false;
-      return;
-    }
-
-    showToast('<span class="spinner"></span>Trimming…');
+    const start = parseInt(document.getElementById('trim-start').value) || 0;
+    const end = document.getElementById('trim-end').value || null;
+    if (mode === 'overwrite' && !confirm('Replace the original file?')) return;
+    document.getElementById('trim-copy-btn').disabled = true;
+    document.getElementById('trim-over-btn').disabled = true;
+    showToast('<span class="spinner"></span>Trimming…', 60000);
     try {
-      const res = await fetch(`${API}/trim`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch(`${getAPI()}/trim`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filename: trimFilename, start, end, mode })
       });
       const data = await res.json();
       if (data.status === 'ok') {
         showToast(mode === 'copy' ? `✓ Saved as ${shortName(data.filename)}` : '✓ Overwritten');
         closeTrimModal();
-        loadLibrary();
-        loadRecent();
-        // Clear duration cache for overwritten file
+        loadLibrary(); loadRecent();
         if (mode === 'overwrite') delete durationCache[trimFilename];
       } else {
-        showToast('✗ Trim failed: ' + (data.error || 'unknown'), 4000);
+        showToast('✗ Trim failed: ' + (data.error || '').slice(0, 60), 4000);
       }
-    } catch (e) {
-      showToast('✗ Could not reach server', 3000);
-    }
-    copyBtn.disabled = false;
-    overBtn.disabled = false;
+    } catch { showToast('✗ Could not reach server'); }
+    document.getElementById('trim-copy-btn').disabled = false;
+    document.getElementById('trim-over-btn').disabled = false;
+  }
+
+  // ─── COMPILE ───────────────────────────────────────
+  function loadCompileTab() {
+    const empty = document.getElementById('compile-empty');
+    const content = document.getElementById('compile-content');
+    if (!selectedClips.length) { empty.style.display = 'block'; content.style.display = 'none'; return; }
+    empty.style.display = 'none'; content.style.display = 'block';
+    renderClipList();
+    setPreviewClip(0);
+  }
+
+  async function renderClipList() {
+    await Promise.all(selectedClips.map(c => getDuration(c.filename)));
+    document.getElementById('clip-list').innerHTML = selectedClips.map((clip, i) => {
+      const dur = durationCache[clip.filename] || 0;
+      return `
+        <div class="clip-item" draggable="true"
+          ondragstart="onDragStart(event,${i})" ondragover="onDragOver(event,${i})"
+          ondrop="onDrop(event,${i})" ondragend="onDragEnd()" id="clip-item-${i}">
+          <div class="clip-drag-handle">⠿</div>
+          <div class="clip-thumb">
+            <video src="${getAPI()}/video/${encodeURIComponent(clip.filename)}" preload="metadata" muted playsinline></video>
+          </div>
+          <div class="clip-info">
+            <div class="clip-name">${shortName(clip.filename)}</div>
+            <div class="clip-trim">
+              <span class="clip-trim-label">Start</span>
+              <select onchange="updateClipTrim(${i},'start',this.value)" onclick="event.stopPropagation()">
+                <option value="0">0s</option>
+                ${Array.from({length:dur},(_,s)=>`<option value="${s+1}" ${clip.start==s+1?'selected':''}>${s+1}s</option>`).join('')}
+              </select>
+              <span class="clip-trim-label">End</span>
+              <select onchange="updateClipTrim(${i},'end',this.value)" onclick="event.stopPropagation()">
+                <option value="">full</option>
+                ${Array.from({length:dur},(_,s)=>`<option value="${s+1}" ${clip.end==s+1?'selected':''}>${s+1}s</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <button class="clip-remove" onclick="removeClip(${i})">✕</button>
+        </div>`;
+    }).join('');
+  }
+
+  function updateClipTrim(i, key, val) { selectedClips[i][key] = val === '' ? null : parseFloat(val); }
+  function removeClip(i) { selectedClips.splice(i, 1); loadCompileTab(); }
+
+  function onDragStart(e, i) { dragSrc = i; document.getElementById(`clip-item-${i}`).classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
+  function onDragOver(e, i) { e.preventDefault(); document.querySelectorAll('.clip-item').forEach(el => el.classList.remove('drag-over')); document.getElementById(`clip-item-${i}`).classList.add('drag-over'); }
+  function onDrop(e, i) { e.preventDefault(); if (dragSrc === null || dragSrc === i) return; const m = selectedClips.splice(dragSrc,1)[0]; selectedClips.splice(i,0,m); renderClipList(); }
+  function onDragEnd() { dragSrc = null; document.querySelectorAll('.clip-item').forEach(el => { el.classList.remove('dragging'); el.classList.remove('drag-over'); }); }
+
+  function setPreviewClip(i) { if (i >= selectedClips.length) return; previewIndex = i; const clip = selectedClips[i]; const p = document.getElementById('preview-player'); p.src = `${getAPI()}/video/${encodeURIComponent(clip.filename)}`; p.currentTime = clip.start || 0; p.load(); }
+  function previewNext() { const clip = selectedClips[previewIndex]; const p = document.getElementById('preview-player'); p.src = `${getAPI()}/video/${encodeURIComponent(clip.filename)}`; p.currentTime = clip.start || 0; p.onended = null; p.play(); }
+  function previewAll() { previewIndex = 0; playClipAt(0); }
+  function playClipAt(i) {
+    if (i >= selectedClips.length) return;
+    const clip = selectedClips[i]; const p = document.getElementById('preview-player');
+    p.src = `${getAPI()}/video/${encodeURIComponent(clip.filename)}`; p.currentTime = clip.start || 0; p.load(); p.play();
+    p.ontimeupdate = () => { if (clip.end && p.currentTime >= clip.end) { p.pause(); p.ontimeupdate = null; playClipAt(i+1); } };
+    p.onended = () => { p.ontimeupdate = null; playClipAt(i+1); };
+  }
+
+  async function doMerge() {
+    if (!selectedClips.length) return;
+    const outputName = document.getElementById('output-name').value.trim() || 'compilation';
+    document.getElementById('merge-btn').disabled = true;
+    setStatus('merge-status', 'loading', '<span class="spinner"></span>Merging… this may take a while');
+    try {
+      const res = await fetch(`${getAPI()}/merge`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clips: selectedClips, output_name: outputName })
+      });
+      const data = await res.json();
+      if (data.status === 'ok') {
+        setStatus('merge-status', 'ok', `✓ Saved as ${data.output} — check My Films`);
+        selectedClips = [];
+        showToast('Compilation saved! 🎉');
+      } else {
+        setStatus('merge-status', 'err', '✗ ' + (data.error || 'Merge failed'));
+      }
+    } catch { setStatus('merge-status', 'err', '✗ Could not reach server'); }
+    document.getElementById('merge-btn').disabled = false;
+  }
+
+  // ─── FILMS ─────────────────────────────────────────
+  async function loadFilms() {
+    const el = document.getElementById('films-list');
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;padding:16px 0">Loading…</div>';
+    try {
+      const res = await fetch(`${getAPI()}/compilations`);
+      const videos = await res.json();
+      if (!videos.length) { el.innerHTML = `<div class="empty"><span>🎞</span><p>No compilations yet.</p></div>`; return; }
+      el.innerHTML = videos.map(v => `
+        <div class="card">
+          <div class="card-icon">🎞</div>
+          <div class="card-info">
+            <div class="card-title">${shortName(v.filename)}</div>
+            <div class="card-meta">${fmtSize(v.size)}</div>
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-secondary btn-sm" onclick="openPlayer('${v.filename}','compilations')">▶</button>
+            <button class="btn btn-secondary btn-sm" onclick="moveToLibrary('${v.filename}')" title="Move to Library">📥</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteVideo('${v.filename}','compilations')">🗑</button>
+          </div>
+        </div>`).join('');
+    } catch { el.innerHTML = `<div style="color:var(--error);font-size:0.82rem">Could not load</div>`; }
   }
 
   // ─── INIT ──────────────────────────────────────────
+  initServerInput();
   loadRecent();
 </script>
 </body>
