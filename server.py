@@ -50,11 +50,8 @@ def download():
         return jsonify({"error": "No URL provided"}), 400
     try:
         cmd = [
-            "yt-dlp",
-            "--no-playlist",
-            "--socket-timeout", "30",
-            "--retries", "3",
-            "--restrict-filenames",
+            "yt-dlp", "--no-playlist", "--socket-timeout", "30",
+            "--retries", "3", "--restrict-filenames",
             "-o", os.path.join(DOWNLOAD_DIR, "%(title)s.%(ext)s"),
         ]
         if os.path.exists(COOKIES_FILE):
@@ -110,11 +107,8 @@ def stream_video(filename):
 def delete_video():
     data = request.get_json()
     filename = data.get("filename", "")
-    folder = data.get("folder", "downloads")  # "downloads" or "compilations"
-    if folder == "compilations":
-        filepath = os.path.join(COMPILATIONS_DIR, filename)
-    else:
-        filepath = os.path.join(DOWNLOAD_DIR, filename)
+    folder = data.get("folder", "downloads")
+    filepath = os.path.join(COMPILATIONS_DIR if folder == "compilations" else DOWNLOAD_DIR, filename)
     if not os.path.exists(filepath):
         return jsonify({"error": "File not found"}), 404
     os.remove(filepath)
@@ -123,14 +117,12 @@ def delete_video():
 
 @app.route("/move-to-library", methods=["POST"])
 def move_to_library():
-    """Move a compilation back to the main downloads folder."""
     data = request.get_json()
     filename = data.get("filename", "")
     src = os.path.join(COMPILATIONS_DIR, filename)
     if not os.path.exists(src):
         return jsonify({"error": "File not found"}), 404
     dst = os.path.join(DOWNLOAD_DIR, filename)
-    # Avoid overwriting
     if os.path.exists(dst):
         base, ext = os.path.splitext(filename)
         dst = os.path.join(DOWNLOAD_DIR, f"{base}_moved{ext}")
@@ -140,7 +132,6 @@ def move_to_library():
 
 @app.route("/video-duration/<path:filename>")
 def video_duration(filename):
-    """Return duration in seconds for a video."""
     filepath = os.path.join(DOWNLOAD_DIR, filename)
     if not os.path.exists(filepath):
         return jsonify({"error": "File not found"}), 404
@@ -177,69 +168,90 @@ def merge():
     output_name = data.get("output_name", "compilation").strip()
     if not clips:
         return jsonify({"error": "No clips provided"}), 400
-
     output_name = re.sub(r"[^\w\-]", "_", output_name)
     output_path = os.path.join(COMPILATIONS_DIR, f"{output_name}.mp4")
     temp_files = []
     concat_file = os.path.join(DOWNLOAD_DIR, "_concat.txt")
-
     try:
         for i, clip in enumerate(clips):
             filepath = os.path.join(DOWNLOAD_DIR, clip["filename"])
             if not os.path.exists(filepath):
                 return jsonify({"error": f"File not found: {clip['filename']}"}), 400
-
             temp_path = os.path.join(DOWNLOAD_DIR, f"_temp_{i}.mp4")
             temp_files.append(temp_path)
-
             start = float(clip.get("start") or 0)
             end = clip.get("end")
-
             cmd = ["ffmpeg", "-y"]
             if start:
                 cmd += ["-ss", str(start)]
             cmd += ["-i", filepath]
             if end:
-                duration = float(end) - start
-                cmd += ["-t", str(duration)]
-
-            cmd += [
-                "-c:v", "libx264", "-preset", "fast",
-                "-c:a", "aac",
-                "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",
-                temp_path
-            ]
-
+                cmd += ["-t", str(float(end) - start)]
+            cmd += ["-c:v", "libx264", "-preset", "fast", "-c:a", "aac",
+                    "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2", temp_path]
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
             if result.returncode != 0:
                 return jsonify({"error": f"v{VERSION} clip {i} failed: {result.stderr[-500:]}"}), 500
-
         with open(concat_file, "w") as f:
             for tp in temp_files:
                 f.write(f"file '{tp}'\n")
-
-        cmd = [
-            "ffmpeg", "-y",
-            "-f", "concat", "-safe", "0",
-            "-i", concat_file,
-            "-c", "copy",
-            output_path
-        ]
+        cmd = ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", concat_file, "-c", "copy", output_path]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
         if result.returncode == 0:
             return jsonify({"status": "ok", "output": os.path.basename(output_path)})
         else:
             return jsonify({"error": f"v{VERSION} concat failed: {result.stderr[-800:]}"}), 500
-
     except Exception as e:
         return jsonify({"error": f"v{VERSION} exception: {str(e)}"}), 500
-
     finally:
         for tp in temp_files:
             if os.path.exists(tp):
                 os.remove(tp)
         if os.path.exists(concat_file):
             os.remove(concat_file)
+
+
+@app.route("/trim", methods=["POST"])
+def trim_video():
+    data = request.get_json()
+    filename = data.get("filename", "")
+    start = float(data.get("start") or 0)
+    end = data.get("end")
+    mode = data.get("mode", "copy")
+    src = os.path.join(DOWNLOAD_DIR, filename)
+    if not os.path.exists(src):
+        return jsonify({"error": "File not found"}), 404
+    base, ext = os.path.splitext(filename)
+    if mode == "copy":
+        out_name = f"{base}_trimmed{ext}"
+        out_path = os.path.join(DOWNLOAD_DIR, out_name)
+        counter = 1
+        while os.path.exists(out_path):
+            out_name = f"{base}_trimmed_{counter}{ext}"
+            out_path = os.path.join(DOWNLOAD_DIR, out_name)
+            counter += 1
+    else:
+        out_path = os.path.join(DOWNLOAD_DIR, f"_trimtmp_{filename}")
+    cmd = ["ffmpeg", "-y"]
+    if start:
+        cmd += ["-ss", str(start)]
+    cmd += ["-i", src]
+    if end:
+        cmd += ["-t", str(float(end) - start)]
+    cmd += ["-c:v", "libx264", "-preset", "fast", "-c:a", "aac",
+            "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2", out_path]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        if result.returncode != 0:
+            return jsonify({"error": result.stderr[-500:]}), 500
+        if mode == "overwrite":
+            os.replace(out_path, src)
+            out_name = filename
+        return jsonify({"status": "ok", "filename": out_name})
+    except Exception as e:
+        if os.path.exists(out_path):
+            os.remove(out_path)
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/compilations/<path:filename>")
@@ -264,85 +276,17 @@ def list_compilations():
     return jsonify(videos)
 
 
-if __name__ == "__main__":
-    print(f"InstaGet server v{VERSION} — saving to: {DOWNLOAD_DIR}")
-    app.run(host="0.0.0.0", port=5000, debug=False)
-
-
-@app.route("/trim", methods=["POST"])
-def trim_video():
-    """Trim a video. mode = 'copy' or 'overwrite'."""
-    data = request.get_json()
-    filename = data.get("filename", "")
-    start = float(data.get("start") or 0)
-    end = data.get("end")
-    mode = data.get("mode", "copy")  # 'copy' or 'overwrite'
-
-    src = os.path.join(DOWNLOAD_DIR, filename)
-    if not os.path.exists(src):
-        return jsonify({"error": "File not found"}), 404
-
-    base, ext = os.path.splitext(filename)
-    if mode == "copy":
-        out_name = f"{base}_trimmed{ext}"
-        out_path = os.path.join(DOWNLOAD_DIR, out_name)
-        # Avoid collisions
-        counter = 1
-        while os.path.exists(out_path):
-            out_name = f"{base}_trimmed_{counter}{ext}"
-            out_path = os.path.join(DOWNLOAD_DIR, out_name)
-            counter += 1
-    else:
-        # Overwrite — write to temp first then replace
-        out_name = filename
-        out_path = os.path.join(DOWNLOAD_DIR, f"_trimtmp_{filename}")
-
-    cmd = ["ffmpeg", "-y"]
-    if start:
-        cmd += ["-ss", str(start)]
-    cmd += ["-i", src]
-    if end:
-        duration = float(end) - start
-        cmd += ["-t", str(duration)]
-    cmd += [
-        "-c:v", "libx264", "-preset", "fast",
-        "-c:a", "aac",
-        "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",
-        out_path
-    ]
-
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
-        if result.returncode != 0:
-            return jsonify({"error": result.stderr[-500:]}), 500
-
-        if mode == "overwrite":
-            os.replace(out_path, src)
-            out_name = filename
-
-        return jsonify({"status": "ok", "filename": out_name})
-    except Exception as e:
-        if os.path.exists(out_path):
-            os.remove(out_path)
-        return jsonify({"error": str(e)}), 500
-
-
 @app.route("/browse", methods=["POST"])
 def browse_profile():
-    """Fetch a list of videos from an Instagram profile URL."""
     data = request.get_json()
     url = data.get("url", "").strip()
     offset = int(data.get("offset", 0))
     limit = int(data.get("limit", 10))
-
     if not url:
         return jsonify({"error": "No URL provided"}), 400
-
     try:
         cmd = [
-            "yt-dlp",
-            "--flat-playlist",
-            "--skip-download",
+            "yt-dlp", "--flat-playlist", "--skip-download",
             "--print", "%(id)s\t%(title)s\t%(url)s\t%(duration)s",
             "--playlist-start", str(offset + 1),
             "--playlist-end", str(offset + limit),
@@ -351,31 +295,28 @@ def browse_profile():
         if os.path.exists(COOKIES_FILE):
             cmd += ["--cookies", COOKIES_FILE]
         cmd.append(url)
-
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
         if result.returncode != 0 and not result.stdout:
             return jsonify({"error": result.stderr[-400:]}), 500
-
         videos = []
         for line in result.stdout.strip().split("\n"):
             if not line.strip():
                 continue
             parts = line.split("\t")
             if len(parts) >= 3:
-                vid_id = parts[0]
-                title = parts[1] if parts[1] != "NA" else vid_id
-                vid_url = parts[2]
-                duration = parts[3] if len(parts) > 3 and parts[3] != "NA" else None
                 videos.append({
-                    "id": vid_id,
-                    "title": title,
-                    "url": vid_url,
-                    "duration": duration
+                    "id": parts[0],
+                    "title": parts[1] if parts[1] != "NA" else parts[0],
+                    "url": parts[2],
+                    "duration": parts[3] if len(parts) > 3 and parts[3] != "NA" else None
                 })
-
         return jsonify({"videos": videos, "offset": offset, "count": len(videos)})
-
     except subprocess.TimeoutExpired:
-        return jsonify({"error": "Timed out fetching profile — try again"}), 500
+        return jsonify({"error": "Timed out — try again"}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+if __name__ == "__main__":
+    print(f"InstaGet server v{VERSION} — saving to: {DOWNLOAD_DIR}")
+    app.run(host="0.0.0.0", port=5000, debug=False)
