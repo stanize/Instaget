@@ -15,7 +15,6 @@ curl -s -o ~/index.html "$RAW/index.html" && echo "✓ index.html"
 echo "Starting servers..."
 nohup python ~/server.py > ~/server.log 2>&1 &
 echo "✓ Flask started (port 5000)"
-
 nohup python -m http.server 8080 --directory ~ > ~/http.log 2>&1 &
 echo "✓ HTTP server started (port 8080)"
 
