@@ -1,4 +1,4 @@
-VERSION = "0.06"
+VERSION = "0.07"
 
 from flask import Flask, request, jsonify, Response, send_file
 from flask_cors import CORS
@@ -324,4 +324,58 @@ def trim_video():
     except Exception as e:
         if os.path.exists(out_path):
             os.remove(out_path)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/browse", methods=["POST"])
+def browse_profile():
+    """Fetch a list of videos from an Instagram profile URL."""
+    data = request.get_json()
+    url = data.get("url", "").strip()
+    offset = int(data.get("offset", 0))
+    limit = int(data.get("limit", 10))
+
+    if not url:
+        return jsonify({"error": "No URL provided"}), 400
+
+    try:
+        cmd = [
+            "yt-dlp",
+            "--flat-playlist",
+            "--skip-download",
+            "--print", "%(id)s\t%(title)s\t%(url)s\t%(duration)s",
+            "--playlist-start", str(offset + 1),
+            "--playlist-end", str(offset + limit),
+            "--no-warnings",
+        ]
+        if os.path.exists(COOKIES_FILE):
+            cmd += ["--cookies", COOKIES_FILE]
+        cmd.append(url)
+
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        if result.returncode != 0 and not result.stdout:
+            return jsonify({"error": result.stderr[-400:]}), 500
+
+        videos = []
+        for line in result.stdout.strip().split("\n"):
+            if not line.strip():
+                continue
+            parts = line.split("\t")
+            if len(parts) >= 3:
+                vid_id = parts[0]
+                title = parts[1] if parts[1] != "NA" else vid_id
+                vid_url = parts[2]
+                duration = parts[3] if len(parts) > 3 and parts[3] != "NA" else None
+                videos.append({
+                    "id": vid_id,
+                    "title": title,
+                    "url": vid_url,
+                    "duration": duration
+                })
+
+        return jsonify({"videos": videos, "offset": offset, "count": len(videos)})
+
+    except subprocess.TimeoutExpired:
+        return jsonify({"error": "Timed out fetching profile — try again"}), 500
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
