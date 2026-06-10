@@ -1,4 +1,4 @@
-VERSION = "0.09"
+VERSION = "0.10"
 
 from flask import Flask, request, jsonify, Response, send_file
 from flask_cors import CORS
@@ -161,7 +161,7 @@ def download():
         cmd = [
             "yt-dlp", "--no-playlist", "--socket-timeout", "30",
             "--retries", "3", "--restrict-filenames",
-            "-o", os.path.join(DOWNLOAD_DIR, "%(title)s.%(ext)s"),
+            "-o", os.path.join(DOWNLOAD_DIR, "%(title)s_%(id)s.%(ext)s"),
         ]
         if os.path.exists(COOKIES_FILE):
             cmd += ["--cookies", COOKIES_FILE]
