@@ -36,20 +36,21 @@ os.makedirs(COMPILATIONS_DIR, exist_ok=True)
 
 VIDEO_EXTENSIONS = (".mp4", ".mkv", ".webm", ".mov", ".avi")
 
-w = max(len(DOWNLOAD_DIR), len(QUEUE_FILE), len(sys.platform), 40) + 4
-def row(label, value):
-    content = f"  {label}: {value}"
-    return f"║{content:<{w}}║"
+lines = [
+    f"  Platform : {sys.platform}",
+    f"  Downloads: {DOWNLOAD_DIR}",
+    f"  Queue    : {QUEUE_FILE}",
+]
+title = f"  InstaGet Server v{VERSION}  "
+w = max(len(title), max(len(l) for l in lines)) + 2
 border = "═" * w
-print(f"""
-╔{border}╗
-║{"  InstaGet Server v" + VERSION:^{w}}║
-╠{border}╣
-{row("Platform ", sys.platform)}
-{row("Downloads", DOWNLOAD_DIR)}
-{row("Queue    ", QUEUE_FILE)}
-╚{border}╝
-""")
+print("╔" + border + "╗")
+print("║" + title.center(w) + "║")
+print("╠" + border + "╣")
+for l in lines:
+    print("║" + l + " " * (w - len(l)) + "║")
+print("╚" + border + "╝")
+print()
 
 
 # ─── QUEUE ─────────────────────────────────────────────────
