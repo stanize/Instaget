@@ -138,6 +138,9 @@
     .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid var(--muted); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 5px; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    textarea { width: 100%; padding: 13px 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 0.82rem; outline: none; resize: vertical; font-family: monospace; }
+    textarea:focus { border-color: var(--accent); }
+
     /* DESKTOP LAYOUT */
     @media (min-width: 768px) {
       .page { max-width: 700px; margin: 0 auto; }
@@ -176,6 +179,15 @@
     <div id="browse-more-wrap" style="display:none;margin-top:8px">
       <button class="btn btn-secondary" onclick="doBrowse(true)">Load 10 more…</button>
     </div>
+
+    <div class="section-label">Or paste page source</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <textarea id="pagesource-input" rows="4" placeholder="On Instagram, open a profile or reel page → right-click → View Page Source → Select All → Copy → Paste here"></textarea>
+      <button class="btn btn-secondary" id="extract-btn" onclick="doExtract()">🔎 Extract video URLs</button>
+    </div>
+    <div class="status" id="extract-status"></div>
+    <div id="extract-list" style="margin-top:10px"></div>
+
 
     <div class="section-label">Recent downloads</div>
     <div id="recent-list"></div>
@@ -864,6 +876,104 @@
           </div>
         </div>`).join('');
     } catch { el.innerHTML = `<div style="color:var(--error);font-size:0.82rem">Could not load</div>`; }
+  }
+
+
+  // ─── PAGE SOURCE EXTRACTOR ─────────────────────────────
+  let extractResults = [];
+  let extractDownloadState = {};
+
+  async function doExtract() {
+    const html = document.getElementById('pagesource-input').value.trim();
+    if (!html) return;
+    document.getElementById('extract-btn').disabled = true;
+    setStatus('extract-status', 'loading', '<span class="spinner"></span>Extracting URLs…');
+    try {
+      const res = await fetch(`${getAPI()}/extract-from-source`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ html })
+      });
+      const data = await res.json();
+      if (data.error) { setStatus('extract-status', 'err', '✗ ' + data.error); return; }
+      if (!data.videos.length) { setStatus('extract-status', 'err', '✗ No video URLs found in the page source'); return; }
+      extractResults = data.videos;
+      extractDownloadState = {};
+      document.getElementById('extract-status').className = 'status';
+      renderExtractList();
+      showToast(`Found ${data.count} video URL${data.count > 1 ? 's' : ''}`);
+    } catch { setStatus('extract-status', 'err', '✗ Could not reach server'); }
+    document.getElementById('extract-btn').disabled = false;
+  }
+
+  function renderExtractList() {
+    const el = document.getElementById('extract-list');
+    el.innerHTML = extractResults.map((v, i) => {
+      const state = extractDownloadState[v.url] || 'idle';
+      let actionHtml = '';
+      if (state === 'idle') {
+        actionHtml = `
+          <button class="btn btn-secondary btn-sm" onclick="addExtractToQueue(${i})">＋Queue</button>
+          <button class="btn btn-primary btn-sm" onclick="downloadExtracted(${i})">⬇️</button>`;
+      } else if (state === 'loading') {
+        actionHtml = `<button class="btn btn-secondary btn-sm" disabled><span class="spinner"></span></button>`;
+      } else if (state === 'done') {
+        actionHtml = `
+          <button class="btn btn-secondary btn-sm" onclick="addExtractToQueue(${i})">＋Queue</button>
+          <button class="btn btn-success btn-sm" disabled>✓</button>`;
+      } else if (state === 'queued') {
+        actionHtml = `
+          <button class="btn btn-success btn-sm" disabled>✓ Queued</button>
+          <button class="btn btn-primary btn-sm" onclick="downloadExtracted(${i})">⬇️</button>`;
+      } else if (state === 'error') {
+        actionHtml = `
+          <button class="btn btn-secondary btn-sm" onclick="addExtractToQueue(${i})">＋Queue</button>
+          <button class="btn btn-danger btn-sm" onclick="downloadExtracted(${i})">↺</button>`;
+      }
+      const label = v.type === 'direct' ? '🎬 Direct video' : `📎 ${v.url.slice(0, 45)}…`;
+      return `
+        <div class="card">
+          <div class="card-icon">${v.type === 'direct' ? '🎬' : '🔗'}</div>
+          <div class="card-info">
+            <div class="card-title">${v.title}</div>
+            <div class="card-meta" style="font-size:0.65rem;word-break:break-all">${v.url.slice(0,60)}…</div>
+          </div>
+          <div class="card-actions">${actionHtml}</div>
+        </div>`;
+    }).join('');
+  }
+
+  async function addExtractToQueue(index) {
+    const v = extractResults[index];
+    try {
+      const res = await fetch(`${getAPI()}/queue/add`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: v.url, title: v.title })
+      });
+      const data = await res.json();
+      extractDownloadState[v.url] = 'queued';
+      renderExtractList();
+      showToast(data.status === 'exists' ? 'Already in queue' : '✓ Added to queue');
+    } catch { showToast('✗ Could not reach server'); }
+  }
+
+  async function downloadExtracted(index) {
+    const v = extractResults[index];
+    extractDownloadState[v.url] = 'loading';
+    renderExtractList();
+    try {
+      const res = await fetch(`${getAPI()}/download`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: v.url })
+      });
+      const data = await res.json();
+      extractDownloadState[v.url] = data.status === 'ok' ? 'done' : 'error';
+      if (data.status === 'ok') { showToast('✓ Downloaded!'); loadRecent(); }
+      else showToast('✗ ' + (data.error || 'Failed').slice(0, 60), 4000);
+    } catch {
+      extractDownloadState[v.url] = 'error';
+      showToast('✗ Could not reach server');
+    }
+    renderExtractList();
   }
 
   // ─── INIT ──────────────────────────────────────────
