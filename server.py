@@ -36,14 +36,19 @@ os.makedirs(COMPILATIONS_DIR, exist_ok=True)
 
 VIDEO_EXTENSIONS = (".mp4", ".mkv", ".webm", ".mov", ".avi")
 
+w = max(len(DOWNLOAD_DIR), len(QUEUE_FILE), len(sys.platform), 40) + 4
+def row(label, value):
+    content = f"  {label}: {value}"
+    return f"║{content:<{w}}║"
+border = "═" * w
 print(f"""
-╔══════════════════════════════════════════╗
-║         InstaGet Server v{VERSION}            ║
-╠══════════════════════════════════════════╣
-║  Platform : {sys.platform:<30}║
-║  Downloads: {DOWNLOAD_DIR[:30]:<30}║
-║  Queue    : {QUEUE_FILE[:30]:<30}║
-╚══════════════════════════════════════════╝
+╔{border}╗
+║{"  InstaGet Server v" + VERSION:^{w}}║
+╠{border}╣
+{row("Platform ", sys.platform)}
+{row("Downloads", DOWNLOAD_DIR)}
+{row("Queue    ", QUEUE_FILE)}
+╚{border}╝
 """)
 
 
