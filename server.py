@@ -1,9 +1,10 @@
-VERSION = "0.08"
+VERSION = "0.09"
 
 from flask import Flask, request, jsonify, Response, send_file
 from flask_cors import CORS
 import subprocess
 import os
+import sys
 import glob
 import re
 import shutil
@@ -13,15 +14,32 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app)
 
-DOWNLOAD_DIR = os.path.expanduser("~/storage/downloads/InstaGet")
+# ─── OS-AWARE PATHS ────────────────────────────────────────
+
+def get_download_dir():
+    if sys.platform == "win32":
+        base = os.path.join(os.path.expanduser("~"), "Downloads", "InstaGet")
+    else:
+        # Android/Termux
+        termux_path = os.path.expanduser("~/storage/downloads/InstaGet")
+        linux_path = os.path.expanduser("~/Downloads/InstaGet")
+        base = termux_path if os.path.exists(os.path.expanduser("~/storage")) else linux_path
+    return base
+
+DOWNLOAD_DIR = get_download_dir()
 COMPILATIONS_DIR = os.path.join(DOWNLOAD_DIR, "compilations")
-COOKIES_FILE = os.path.expanduser("~/instagram_cookies.txt")
-QUEUE_FILE = os.path.expanduser("~/instaget_queue.json")
+COOKIES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "instagram_cookies.txt")
+QUEUE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "instaget_queue.json")
 
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 os.makedirs(COMPILATIONS_DIR, exist_ok=True)
 
 VIDEO_EXTENSIONS = (".mp4", ".mkv", ".webm", ".mov", ".avi")
+
+print(f"InstaGet server v{VERSION}")
+print(f"Platform: {sys.platform}")
+print(f"Downloads: {DOWNLOAD_DIR}")
+print(f"Queue: {QUEUE_FILE}")
 
 
 # ─── QUEUE ─────────────────────────────────────────────────
@@ -54,7 +72,6 @@ def add_to_queue():
     if not url:
         return jsonify({"error": "No URL"}), 400
     queue = load_queue()
-    # Avoid duplicates
     if any(item["url"] == url for item in queue):
         return jsonify({"status": "exists"})
     queue.append({
@@ -72,49 +89,63 @@ def add_to_queue():
 def remove_from_queue():
     data = request.get_json()
     item_id = data.get("id", "")
-    queue = load_queue()
-    queue = [item for item in queue if item["id"] != item_id]
+    queue = [item for item in load_queue() if item["id"] != item_id]
     save_queue(queue)
     return jsonify({"status": "ok"})
 
 
-@app.route("/queue/update-status", methods=["POST"])
-def update_queue_status():
+# ─── PAGE SOURCE EXTRACTOR ─────────────────────────────────
+
+@app.route("/extract-from-source", methods=["POST"])
+def extract_from_source():
+    """Extract Instagram reel/video URLs from pasted page source HTML."""
     data = request.get_json()
-    item_id = data.get("id", "")
-    status = data.get("status", "")
-    queue = load_queue()
-    for item in queue:
-        if item["id"] == item_id:
-            item["last_status"] = status
-            item["last_downloaded"] = datetime.now().isoformat()
-    save_queue(queue)
-    return jsonify({"status": "ok"})
+    html = data.get("html", "")
+    if not html:
+        return jsonify({"error": "No HTML provided"}), 400
 
+    found = set()
 
-# ─── UTILS ─────────────────────────────────────────────────
+    # Match Instagram reel/post/video URLs
+    patterns = [
+        r'https://www\.instagram\.com/(?:reel|p|tv)/([A-Za-z0-9_\-]+)/?',
+        r'"shortcode"\s*:\s*"([A-Za-z0-9_\-]+)"',
+        r'"video_url"\s*:\s*"(https://[^"]+\.mp4[^"]*)"',
+        r'videoSrc\s*[=:]\s*["\']([^"\']+)["\']',
+    ]
 
-def get_videos():
-    videos = []
-    for ext in VIDEO_EXTENSIONS:
-        for path in glob.glob(os.path.join(DOWNLOAD_DIR, f"*{ext}")):
-            name = os.path.basename(path)
-            size = os.path.getsize(path)
-            mtime = os.path.getmtime(path)
-            videos.append({"filename": name, "size": size, "mtime": mtime, "path": path})
-    videos.sort(key=lambda v: v["mtime"], reverse=True)
-    return videos
+    results = []
 
+    # Direct video CDN URLs
+    for match in re.finditer(r'https://[a-z0-9\-]+\.cdninstagram\.com/[^\s"\'<>]+\.mp4[^\s"\'<>]*', html):
+        url = match.group(0).replace('\\u0026', '&').replace('\\/', '/')
+        if url not in found:
+            found.add(url)
+            results.append({"type": "direct", "url": url, "title": f"Video {len(results)+1}"})
 
-def safe_filename(name):
-    return re.sub(r"[^\w\-.]", "_", name)
+    # Shortcodes -> construct Instagram URLs
+    shortcodes = set()
+    for pattern in [r'"shortcode"\s*:\s*"([A-Za-z0-9_\-]{5,})"',
+                    r'instagram\.com/(?:reel|p)/([A-Za-z0-9_\-]{5,})',
+                    r'/reel/([A-Za-z0-9_\-]{5,})/',
+                    r'\"code\"\s*:\s*\"([A-Za-z0-9_\-]{5,})\"']:
+        for match in re.finditer(pattern, html):
+            shortcodes.add(match.group(1))
+
+    for code in shortcodes:
+        url = f"https://www.instagram.com/reel/{code}/"
+        if url not in found:
+            found.add(url)
+            results.append({"type": "reel", "url": url, "title": f"Reel {code}"})
+
+    return jsonify({"videos": results, "count": len(results)})
 
 
 # ─── VERSION ───────────────────────────────────────────────
 
 @app.route("/version")
 def version():
-    return jsonify({"version": VERSION})
+    return jsonify({"version": VERSION, "platform": sys.platform, "download_dir": DOWNLOAD_DIR})
 
 
 # ─── DOWNLOAD ──────────────────────────────────────────────
@@ -144,7 +175,7 @@ def download():
                         item["last_status"] = "downloaded"
                         item["last_downloaded"] = datetime.now().isoformat()
                 save_queue(queue)
-            return jsonify({"status": "ok", "message": "Video downloaded!"})
+            return jsonify({"status": "ok"})
         else:
             if queue_id:
                 queue = load_queue()
@@ -158,6 +189,20 @@ def download():
 
 
 # ─── VIDEOS ────────────────────────────────────────────────
+
+def get_videos():
+    videos = []
+    for ext in VIDEO_EXTENSIONS:
+        for path in glob.glob(os.path.join(DOWNLOAD_DIR, f"*{ext}")):
+            name = os.path.basename(path)
+            videos.append({"filename": name, "size": os.path.getsize(path), "mtime": os.path.getmtime(path), "path": path})
+    videos.sort(key=lambda v: v["mtime"], reverse=True)
+    return videos
+
+
+def safe_filename(name):
+    return re.sub(r"[^\w\-.]", "_", name)
+
 
 @app.route("/videos", methods=["GET"])
 def list_videos():
@@ -229,8 +274,7 @@ def video_duration(filename):
     if not os.path.exists(filepath):
         return jsonify({"error": "File not found"}), 404
     result = subprocess.run(
-        ["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
-         "-of", "csv=p=0", filepath],
+        ["ffprobe", "-v", "quiet", "-show_entries", "format=duration", "-of", "csv=p=0", filepath],
         capture_output=True, text=True
     )
     try:
@@ -259,10 +303,9 @@ def rename_existing():
 def merge():
     data = request.get_json()
     clips = data.get("clips", [])
-    output_name = data.get("output_name", "compilation").strip()
+    output_name = re.sub(r"[^\w\-]", "_", data.get("output_name", "compilation").strip())
     if not clips:
         return jsonify({"error": "No clips provided"}), 400
-    output_name = re.sub(r"[^\w\-]", "_", output_name)
     output_path = os.path.join(COMPILATIONS_DIR, f"{output_name}.mp4")
     temp_files = []
     concat_file = os.path.join(DOWNLOAD_DIR, "_concat.txt")
@@ -365,11 +408,7 @@ def list_compilations():
     videos = []
     for ext in VIDEO_EXTENSIONS:
         for path in glob.glob(os.path.join(COMPILATIONS_DIR, f"*{ext}")):
-            videos.append({
-                "filename": os.path.basename(path),
-                "size": os.path.getsize(path),
-                "mtime": os.path.getmtime(path)
-            })
+            videos.append({"filename": os.path.basename(path), "size": os.path.getsize(path), "mtime": os.path.getmtime(path)})
     videos.sort(key=lambda v: v["mtime"], reverse=True)
     return jsonify(videos)
 
@@ -418,7 +457,4 @@ def browse_profile():
 
 
 if __name__ == "__main__":
-    print(f"InstaGet server v{VERSION}")
-    print(f"Downloads: {DOWNLOAD_DIR}")
-    print(f"Queue: {QUEUE_FILE}")
     app.run(host="0.0.0.0", port=5000, debug=False)
