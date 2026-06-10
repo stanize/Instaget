@@ -36,10 +36,15 @@ os.makedirs(COMPILATIONS_DIR, exist_ok=True)
 
 VIDEO_EXTENSIONS = (".mp4", ".mkv", ".webm", ".mov", ".avi")
 
-print(f"InstaGet server v{VERSION}")
-print(f"Platform: {sys.platform}")
-print(f"Downloads: {DOWNLOAD_DIR}")
-print(f"Queue: {QUEUE_FILE}")
+print(f"""
+╔══════════════════════════════════════════╗
+║         InstaGet Server v{VERSION}            ║
+╠══════════════════════════════════════════╣
+║  Platform : {sys.platform:<30}║
+║  Downloads: {DOWNLOAD_DIR[:30]:<30}║
+║  Queue    : {QUEUE_FILE[:30]:<30}║
+╚══════════════════════════════════════════╝
+""")
 
 
 # ─── QUEUE ─────────────────────────────────────────────────
