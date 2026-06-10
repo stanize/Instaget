@@ -1,7 +1,7 @@
 #!/bin/bash
 # InstaGet deploy script
 
-RAW="https://raw.githubusercontent.com/stanize/instaget/main"
+RAW="https://raw.githubusercontent.com/stanize/Instaget/main"
 
 echo "Stopping existing servers..."
 pkill -f "python server.py" 2>/dev/null && echo "✓ Flask stopped" || echo "- Flask was not running"
